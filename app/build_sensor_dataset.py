@@ -19,6 +19,7 @@ from pathlib import Path
 import logging
 from typing import Tuple, List
 import sys
+import time
 
 # Local imports
 from sensor_labels import generate_labels_for_dataset
@@ -44,9 +45,14 @@ TEST_SPLIT_DATE = '2025-07-01'  # Time-based split: everything after this goes t
 # Paths - relative to project root, works both locally and in Docker
 OUTPUT_DIR = Path(Config.OUTPUT_DIR)
 BASE_DIR = Path(__file__).parent.parent
-FIRMS_2024_CSV = BASE_DIR / 'FIRMS_2024_ARCHIVE' / 'fire_archive_M-C61_699932.csv'
-FIRMS_2025_ARCHIVE_CSV = BASE_DIR / 'FIRMS_2025_NRT' / 'fire_archive_M-C61_699365.csv'
-FIRMS_2025_NRT_CSV = BASE_DIR / 'FIRMS_2025_NRT' / 'fire_nrt_M-C61_699365.csv'
+#FIRMS_2024_CSV = BASE_DIR / 'FIRMS_2024_ARCHIVE' / 'fire_archive_M-C61_699932.csv'
+#FIRMS_2025_ARCHIVE_CSV = BASE_DIR / 'FIRMS_2025_NRT' / 'fire_archive_M-C61_699365.csv'
+#FIRMS_2025_NRT_CSV = BASE_DIR / 'FIRMS_2025_NRT' / 'fire_nrt_M-C61_699365.csv'
+#SITES_CSV = Path(Config.DATA_DIR) / 'standorte.csv'
+
+FIRMS_2024_CSV = BASE_DIR / 'FIRMS_2024_ARCHIVE' / 'fire_archive_M-C61_702295.csv'
+FIRMS_2025_ARCHIVE_CSV = BASE_DIR / 'FIRMS_2025_NRT' / 'fire_archive_M-C61_702294.csv'
+FIRMS_2025_NRT_CSV = BASE_DIR / 'FIRMS_2025_NRT' / 'fire_nrt_M-C61_702294'
 SITES_CSV = Path(Config.DATA_DIR) / 'standorte.csv'
 
 
@@ -259,13 +265,34 @@ def build_dataset(
     labels_df = generate_labels_for_dataset(sites_df, target_dates, firms_df, usgs_df)
     
     # 2. Extract features
-    logger.info("\nStep 2/2: Extracting Features...")
+    logger.info("\nStep 2/2: Extracting Features (incl. Weather Data Collection)...")
     features_list = []
     
     total = len(labels_df)
+    
+    # Timing statistics for weather data collection
+    weather_start_time = time.time()
+    weather_fetch_count = 0
+    weather_total_time = 0.0
+    last_progress_log = time.time()
+    
     for idx, row in labels_df.iterrows():
-        if idx % 50 == 0:
-            logger.info(f"  Progress: {idx}/{total} ({idx/total*100:.1f}%)")
+        # Log progress every 50 samples or every 10 seconds
+        current_time = time.time()
+        if idx % 50 == 0 or (current_time - last_progress_log) >= 10:
+            elapsed = current_time - weather_start_time
+            elapsed_str = f"{elapsed:.1f}s" if elapsed < 60 else f"{elapsed/60:.1f}min"
+            
+            # Estimate remaining time
+            if idx > 0:
+                rate = elapsed / idx  # seconds per sample
+                remaining = rate * (total - idx)
+                remaining_str = f"{remaining:.0f}s" if remaining < 60 else f"{remaining/60:.1f}min"
+                logger.info(f"  Progress: {idx}/{total} ({idx/total*100:.1f}%) | Elapsed: {elapsed_str} | Remaining: ~{remaining_str}")
+            else:
+                logger.info(f"  Progress: {idx}/{total} ({idx/total*100:.1f}%) | Starting...")
+            
+            last_progress_log = current_time
         
         site = {
             'name': row['site_name'],
@@ -274,7 +301,8 @@ def build_dataset(
         }
         target_date = row['target_date']
         
-        # Extract features (only PAST data!)
+        # Extract features (only PAST data!) - includes weather API calls
+        fetch_start = time.time()
         features = extract_all_features(
             site=site,
             target_date=target_date,
@@ -284,6 +312,12 @@ def build_dataset(
             model_type=model_type,
             use_historical_weather=True  # IMPORTANT: Historical for training!
         )
+        fetch_time = time.time() - fetch_start
+        
+        # Track weather fetch timing (fire model uses weather API)
+        if model_type == 'fire':
+            weather_fetch_count += 1
+            weather_total_time += fetch_time
         
         # Combine with labels
         sample = {
@@ -306,7 +340,18 @@ def build_dataset(
         
         features_list.append(sample)
     
-    logger.info(f"  Progress: {total}/{total} (100.0%)")
+    # Final progress and timing stats
+    total_elapsed = time.time() - weather_start_time
+    total_elapsed_str = f"{total_elapsed:.1f}s" if total_elapsed < 60 else f"{total_elapsed/60:.1f}min"
+    logger.info(f"  Progress: {total}/{total} (100.0%) | Total Time: {total_elapsed_str}")
+    
+    # Weather collection statistics (only for fire model)
+    if model_type == 'fire' and weather_fetch_count > 0:
+        avg_weather_time = weather_total_time / weather_fetch_count
+        logger.info(f"\nWeather Data Collection Summary:")
+        logger.info(f"  Total API Calls: {weather_fetch_count}")
+        logger.info(f"  Total Weather Time: {weather_total_time:.1f}s ({weather_total_time/60:.1f}min)")
+        logger.info(f"  Avg Time per Call: {avg_weather_time*1000:.0f}ms")
     
     # DataFrame erstellen
     dataset_df = pd.DataFrame(features_list)

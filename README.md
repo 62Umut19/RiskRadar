@@ -40,12 +40,11 @@ projekt-root/
 ├── docker-compose.yml
 └── .env                           # Konfiguration
 ```
-
 ## 🚀 Quick Start
 
 ### Voraussetzungen
 
-- **Python 3.11** (empfohlen, Python 3.13 wird noch nicht unterstützt) oder **Docker**
+- **Python 3.11** (empfohlen, Python 3.13 wird noch nicht unterstützt) und **Docker**
 - Internet-Verbindung für APIs (FIRMS, USGS, OpenMeteo)
 - **NASA FIRMS Daten** (siehe Daten-Setup unten)
 
@@ -77,17 +76,17 @@ FIRMS_MAP_KEY=dein_map_key_hier
 
 **🔥 Download 1: FIRMS 2024 Archive**
 - **Link:** https://firms.modaps.eosdis.nasa.gov/download/
-- **Auswahl:** `MODIS C6.1` → `Global` → `2024` → `Archive CSV`
-- **Dateiname:** `fire_archive_M-C61_699932.csv`
-- **Speicherort:** `FIRMS_2024_ARCHIVE/fire_archive_M-C61_699932.csv`
+- **Auswahl:** `Create New Request`  → `World`  → `MODIS` → `Timeframe 2024-01-01 - 2024-12-31` → `CSV` → `Submit`
+- **Dateiname:** `fire_archive_M-C61_XXXXXX.csv`
+- **Speicherort:** `FIRMS_2024_ARCHIVE/`
 - **Zweck:** Historische Trainingsdaten (ganzes Jahr 2024)
 
 **🔥 Download 2: FIRMS 2025 NRT (enthält 2 CSV-Dateien)**
 - **Link:** https://firms.modaps.eosdis.nasa.gov/download/
-- **Auswahl:** `MODIS C6.1` → `Global` → `2025` → Download als ZIP
+- **Auswahl:** `Create New Request`  → `World`  → `MODIS` → `Timeframe 2025-01-01 - 2025-12-31` → `CSV` → `Submit`
 - **Enthalten:**
-  - `fire_archive_M-C61_699365.csv` - Archivdaten 2025
-  - `fire_nrt_M-C61_699365.csv` - Letzte 7 Tage (NRT)
+  - `fire_archive_M-C61_XXXXXX.csv` - Archivdaten 2025
+  - `fire_nrt_M-C61_XXXXXX.csv` - Letzte 7 Tage (NRT)
 - **Speicherort:** Beide in `FIRMS_2025_NRT/` entpacken
 - **Zweck:** Aktuelle Daten für Vorhersagen
 
@@ -95,14 +94,14 @@ FIRMS_MAP_KEY=dein_map_key_hier
 ```
 RiskRadar/
 ├── FIRMS_2024_ARCHIVE/
-│   └── fire_archive_M-C61_699932.csv    (370 MB)
+│   └── fire_archive_M-C61_XXXXXX.csv
 ├── FIRMS_2025_NRT/
-│   ├── fire_nrt_M-C61_699365.csv        (138 MB)
-│   └── fire_archive_M-C61_699365.csv    (161 MB)
+│   ├── fire_nrt_M-C61_XXXXXX.csv
+│   └── fire_archive_M-C61_XXXXXX.csv
 └── .env                                  (mit deinem MAP_KEY)
 ```
 
-**⚠️ Hinweis:** Diese Dateien sind zu groß für Git (~670 MB) und müssen manuell heruntergeladen werden. Sie sind bereits in der `.gitignore`.
+**⚠️ Hinweis:** Diese Dateien sind zu groß für Git und müssen manuell heruntergeladen werden. Sie sind bereits in der `.gitignore`.
 
 ### Schritt 4: Dataset bauen (einmalig)
 
@@ -132,6 +131,26 @@ start.bat   # Windows
 
 # 4. Ergebnisse ansehen
 open outputs/real_forecast_map.html
+```
+
+**🎯 Für Präsentationen:**
+```bash
+# Vorbereitung (1x durchführen):
+docker-compose build
+docker-compose run --rm radar python app/run_real_forecast.py
+
+# Am Präsentationstag (3 Sekunden!):
+docker-compose up -d viewer
+open http://localhost:8080/sensor_forecast_map.html
+```
+
+**Weitere Docker-Befehle:**
+```bash
+docker-compose up -d          # Im Hintergrund starten
+docker-compose logs -f radar  # Logs anschauen
+docker-compose down           # Stoppen
+./update.sh                   # System aktualisieren (Mac/Linux)
+./stop.sh                     # System stoppen (Mac/Linux)
 ```
 
 ### Option 2: Lokale Python-Installation
@@ -263,7 +282,26 @@ black app/
 ```
 ## 🔧 Troubleshooting
 
+### Problem: Docker läuft nicht
+**Lösung:** Docker Desktop öffnen und warten, bis der Wal-Icon grün ist
 
+### Problem: Port 8080 belegt
+**Lösung:** In `docker-compose.yml` den Port ändern (z.B. 9090:80)
+
+### Problem: "Module not found"
+```bash
+# Stellen Sie sicher, dass Sie im Virtual Environment sind
+source venv/bin/activate
+pip install -r app/requirements.txt
+```
+
+### Problem: "Permission denied" bei Scripts
+```bash
+chmod +x start.sh stop.sh update.sh
+```
+
+### Problem: FIRMS-Daten veraltet
+**Lösung:** Siehe `FIRMS_UPDATE_ANLEITUNG.md` für Anleitung zum Aktualisieren der NASA-Daten
 
 ## 📝 Best Practices
 
