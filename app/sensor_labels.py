@@ -236,6 +236,7 @@ def generate_labels_for_dataset(
     total = len(sites_df) * len(target_dates)
     logger.info(f"Generating labels for {len(sites_df)} sites × {len(target_dates)} dates = {total} samples")
     
+    progress_count = 0
     for idx, site_row in sites_df.iterrows():
         site = {
             'name': site_row['name'],
@@ -244,6 +245,10 @@ def generate_labels_for_dataset(
         }
         
         for target_date in target_dates:
+            # Progress logging every 100 samples
+            if progress_count % 100 == 0:
+                logger.info(f"  Label progress: {progress_count}/{total} ({progress_count/total*100:.1f}%)")
+            progress_count += 1
             # Wildfire Label
             fire_label, fire_meta = build_fire_label(site, target_date, firms_df)
             
@@ -268,6 +273,7 @@ def generate_labels_for_dataset(
                 'quake_num_significant': quake_meta['num_significant']
             })
     
+    logger.info(f"  Label progress: {total}/{total} (100.0%) - Complete!")
     df = pd.DataFrame(results)
     
     # Stats
