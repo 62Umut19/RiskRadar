@@ -10,13 +10,11 @@ Die lokalen FIRMS-Daten reichen nur bis **22. Dezember 2025**. Aktuell fehlen **
 #### 1. NASA FIRMS MAP_KEY beantragen (KOSTENLOS!)
 
 1. Gehe zu: **https://firms.modaps.eosdis.nasa.gov/api/area/**
-2. Klicke auf **"Request a Key"** oder **"Get API Key"**
-3. Fülle das Formular aus:
-   - Name
+2. Scrolle nach unten zu **Map Key**
+3. Klicke auf **"Get MAP_KEY"**
+4. Fülle das Formular aus:
    - Email
-   - Organization (z.B. "FOM Hochschule")
-   - Use Case: "Academic research - wildfire risk prediction"
-4. Du erhältst sofort einen **MAP_KEY** per Email
+5. Du erhältst sofort einen **MAP_KEY** per Email
 
 #### 2. MAP_KEY in .env eintragen
 
@@ -82,26 +80,6 @@ python update_firms_data.py
 
 Das Skript erkennt automatisch, welche Daten fehlen!
 
-### Alternative: Manueller Download
-Falls die API nicht funktioniert, kannst du die Daten auch manuell herunterladen:
-
-1. Gehe zu: https://firms.modaps.eosdis.nasa.gov/download/
-2. Wähle:
-   - **Data Source**: MODIS C6.1
-   - **Time Range**: "Last 7 days" oder custom
-   - **Area**: Global oder Custom Bounding Box
-3. Download die CSV-Datei
-4. Kopiere sie nach `FIRMS_2025_NRT/fire_nrt_M-C61_699365.csv`
-
----
-
-## 🎯 Erwartetes Ergebnis
-
-Nach dem Update solltest du haben:
-- **FIRMS Daten**: 22. Dez 2023 - 4. Jan 2026 (heute!)
-- **~8,7 Millionen** Feuer-Detektionen
-- **Aktuelle Vorhersagen** basierend auf neuesten Daten
-
 ---
 
 ## 🔍 Testen
@@ -110,7 +88,7 @@ Prüfe, ob die Daten aktualisiert wurden:
 
 ```bash
 # Letztes Datum in der NRT-Datei checken
-tail FIRMS_2025_NRT/fire_nrt_M-C61_699365.csv
+tail FIRMS_2025_NRT/fire_nrt_M-C61_XXXXXX.csv
 
 # Sollte zeigen: 2026-01-04 (oder aktuelles Datum)
 ```
@@ -126,4 +104,4 @@ tail FIRMS_2025_NRT/fire_nrt_M-C61_699365.csv
 ---
 
 **Erstellt am**: 4. Januar 2026  
-**Letztes Update**: 4. Januar 2026
+**Letztes Update**: 8. Januar 2026
