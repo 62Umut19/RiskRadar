@@ -252,10 +252,6 @@ def generate_labels_for_dataset(
             if counter % 100 == 0 or counter == total:
                 progress = (counter / total) * 100
                 logger.info(f"  Progress: {counter}/{total} ({progress:.1f}%) - Current: {site['name']} @ {target_date.strftime('%Y-%m-%d')}")
-            counter += 1
-            if counter % 100 == 0 or counter == total:
-                progress = (counter / total) * 100
-                logger.info(f"  Progress: {counter}/{total} ({progress:.1f}%) - Current: {site['name']} @ {target_date.strftime('%Y-%m-%d')}")
             
             # Wildfire Label
             fire_label, fire_meta = build_fire_label(site, target_date, firms_df)
