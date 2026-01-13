@@ -57,8 +57,18 @@ RANDOM_FOREST_PARAMS = {
     'max_features': 'sqrt',
     'random_state': 42,
     'n_jobs': -1,
-    'class_weight': 'balanced'  # Wichtig bei Imbalance!
+    'class_weight': 'balanced'  # Will be overridden for specific models
 }
+
+# Fire-specific: Aggressive weighting to improve Recall (currently 32.3%)
+FIRE_CLASS_WEIGHT = {0: 1, 1: 10}  # Penalize missing fires 10x more
+
+# Earthquake-specific: Moderate weighting to balance Precision vs Recall
+QUAKE_CLASS_WEIGHT = {0: 1, 1: 15}  # Reduced from 30 to improve Precision
+
+# Prediction Thresholds (Quick Win #2: Lower threshold for better Recall)
+FIRE_THRESHOLD = 0.3   # Lower than default 0.5 to catch more fires
+QUAKE_THRESHOLD = 0.4  # Slightly lower to balance Precision/Recall
 
 
 # ==================== DATA LOADING ====================
@@ -119,21 +129,32 @@ def load_train_test_data(model_type: str) -> tuple:
 
 # ==================== MODEL TRAINING ====================
 
-def train_model(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestClassifier:
+def train_model(X_train: np.ndarray, y_train: np.ndarray, model_type: str = 'fire') -> RandomForestClassifier:
     """
-    Trainiert Random Forest Klassifikator.
+    Train Random Forest Classifier with model-specific parameters.
     
     Args:
         X_train: Training Features
         y_train: Training Labels
+        model_type: 'fire' or 'quake' - determines class weights
         
     Returns:
-        Trainiertes Modell
+        Trained model
     """
     logger.info("\nTraining Random Forest Classifier...")
-    logger.info(f"  Hyperparameters: {RANDOM_FOREST_PARAMS}")
     
-    model = RandomForestClassifier(**RANDOM_FOREST_PARAMS)
+    # Use model-specific class weights
+    params = RANDOM_FOREST_PARAMS.copy()
+    if model_type == 'quake':
+        params['class_weight'] = QUAKE_CLASS_WEIGHT
+        logger.info(f"  Using quake-specific class weights: {QUAKE_CLASS_WEIGHT}")
+    elif model_type == 'fire':
+        params['class_weight'] = FIRE_CLASS_WEIGHT
+        logger.info(f"  Using fire-specific class weights: {FIRE_CLASS_WEIGHT}")
+    
+    logger.info(f"  Hyperparameters: {params}")
+    
+    model = RandomForestClassifier(**params)
     model.fit(X_train, y_train)
     
     logger.info("✓ Training complete!")
@@ -167,12 +188,19 @@ def evaluate_model(
     logger.info("MODEL EVALUATION")
     logger.info("="*60)
     
-    # Predictions
-    y_pred = model.predict(X_test)
+    # Get model-specific threshold
+    threshold = FIRE_THRESHOLD if model_type == 'fire' else QUAKE_THRESHOLD
+    logger.info(f"\nUsing custom threshold: {threshold} (default is 0.5)")
+    
+    # Predictions with custom threshold (Quick Win #2)
     y_proba = model.predict_proba(X_test)[:, 1]  # Probability für Klasse 1
+    y_pred = (y_proba >= threshold).astype(int)  # Custom threshold instead of 0.5
+    
+    # Also get default predictions for comparison
+    y_pred_default = model.predict(X_test)
     
     # 1. Confusion Matrix
-    logger.info("\n1. Confusion Matrix:")
+    logger.info("\n1. Confusion Matrix (Custom Threshold):")
     cm = confusion_matrix(y_test, y_pred)
     tn, fp, fn, tp = cm.ravel()
     
@@ -181,14 +209,24 @@ def evaluate_model(
     logger.info(f"    Actual 0  {tn:4d}  {fp:4d}")
     logger.info(f"           1  {fn:4d}  {tp:4d}")
     
+    # Show comparison with default threshold
+    recall_custom = recall_score(y_test, y_pred)
+    precision_custom = precision_score(y_test, y_pred)
+    recall_default = recall_score(y_test, y_pred_default)
+    precision_default = precision_score(y_test, y_pred_default)
+    
+    logger.info(f"\n  Comparison (Custom {threshold} vs Default 0.5):")
+    logger.info(f"    Recall:    {recall_custom:.3f} vs {recall_default:.3f} ({recall_custom-recall_default:+.3f})")
+    logger.info(f"    Precision: {precision_custom:.3f} vs {precision_default:.3f} ({precision_custom-precision_default:+.3f})")
+    
     # 2. Classification Report
     logger.info("\n2. Classification Report:")
     report = classification_report(y_test, y_pred, target_names=['No Event', 'Event'])
     logger.info(f"\n{report}")
     
     # 3. Key Metrics
-    recall = recall_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
+    recall = recall_custom
+    precision = precision_custom
     f1 = f1_score(y_test, y_pred)
     
     logger.info("\n3. Key Metrics:")
@@ -356,7 +394,7 @@ def main():
     
     # 2. Train Model
     logger.info("\n2. Training Model...")
-    model = train_model(X_train, y_train)
+    model = train_model(X_train, y_train, model_type)
     
     # 3. Evaluate Model
     logger.info("\n3. Evaluating Model...")

@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # ==================== LABEL CONFIGURATION ====================
 
 # Gemeinsame Definitionen
-RADIUS_KM = 50  # Haversine-Radius um Standort (direkte Umgebung)
+RADIUS_KM = 100  # Haversine-Radius um Standort (direkte Umgebung) - for fire
 PREDICTION_HORIZON_HOURS = 72  # 72h Vorhersage-Fenster
 
 # FIRMS (Wildfire) Konfiguration
@@ -36,7 +36,8 @@ FIRMS_MIN_DETECTIONS = 1  # Mindestens X Detections für Label=1
 # FRP Guide: <10 MW = oft landwirtschaftlich/industriell, 10-30 MW = moderate Feuer, >30 MW = echte Wildfires
 
 # USGS (Earthquake) Konfiguration  
-USGS_MIN_MAGNITUDE = 2.5  # Minimum Magnitude (kleinere ignorieren)
+USGS_RADIUS_KM = 150  # Larger radius for earthquakes (was 100km) - earthquakes have regional impact
+USGS_MIN_MAGNITUDE = 2.0  # Minimum Magnitude (lowered from 2.5 to capture more events)
 USGS_MIN_EVENTS = 1  # Mindestens X Events für Label=1
 
 # Optional: Strenger Threshold für "significant events"
@@ -108,14 +109,15 @@ def build_fire_label(
     combined_filter = reduce(operator.and_, filters)
     future_fires = firms_df[combined_filter]
     
-    # 3. Räumlicher Filter (200km Radius)
+    # 3. Räumlicher Filter (radius_km) - VECTORIZED for speed (10-100x faster!)
     if len(future_fires) > 0:
-        future_fires = future_fires[
-            future_fires.apply(
-                lambda row: haversine_distance(lat, lon, row['latitude'], row['longitude']) < radius_km,
-                axis=1
-            )
-        ]
+        from geo_utils import haversine_distance_vectorized
+        distances = haversine_distance_vectorized(
+            lat, lon, 
+            future_fires['latitude'].values, 
+            future_fires['longitude'].values
+        )
+        future_fires = future_fires[distances < radius_km]
     
     # 4. Label erstellen
     num_detections = len(future_fires)
@@ -141,7 +143,7 @@ def build_quake_label(
     usgs_df: pd.DataFrame,
     min_magnitude: float = USGS_MIN_MAGNITUDE,
     min_events: int = USGS_MIN_EVENTS,
-    radius_km: float = RADIUS_KM
+    radius_km: float = USGS_RADIUS_KM
 ) -> Tuple[int, Dict]:
     """
     Create earthquake label based on USGS events in future window.
@@ -183,14 +185,15 @@ def build_quake_label(
         (usgs_df['mag'] >= min_magnitude)
     ]
     
-    # 3. Räumlicher Filter (200km Radius)
+    # 3. Räumlicher Filter (radius_km) - VECTORIZED for speed (10-100x faster!)
     if len(future_quakes) > 0:
-        future_quakes = future_quakes[
-            future_quakes.apply(
-                lambda row: haversine_distance(lat, lon, row['latitude'], row['longitude']) < radius_km,
-                axis=1
-            )
-        ]
+        from geo_utils import haversine_distance_vectorized
+        distances = haversine_distance_vectorized(
+            lat, lon,
+            future_quakes['latitude'].values,
+            future_quakes['longitude'].values
+        )
+        future_quakes = future_quakes[distances < radius_km]
     
     # 4. Label erstellen
     num_events = len(future_quakes)
@@ -236,7 +239,7 @@ def generate_labels_for_dataset(
     total = len(sites_df) * len(target_dates)
     logger.info(f"Generating labels for {len(sites_df)} sites × {len(target_dates)} dates = {total} samples")
     
-    progress_count = 0
+    counter = 0
     for idx, site_row in sites_df.iterrows():
         site = {
             'name': site_row['name'],
@@ -245,10 +248,11 @@ def generate_labels_for_dataset(
         }
         
         for target_date in target_dates:
-            # Progress logging every 100 samples
-            if progress_count % 100 == 0:
-                logger.info(f"  Label progress: {progress_count}/{total} ({progress_count/total*100:.1f}%)")
-            progress_count += 1
+            counter += 1
+            if counter % 100 == 0 or counter == total:
+                progress = (counter / total) * 100
+                logger.info(f"  Progress: {counter}/{total} ({progress:.1f}%) - Current: {site['name']} @ {target_date.strftime('%Y-%m-%d')}")
+            
             # Wildfire Label
             fire_label, fire_meta = build_fire_label(site, target_date, firms_df)
             

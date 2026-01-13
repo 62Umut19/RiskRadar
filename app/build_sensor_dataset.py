@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """
-Dataset Builder for Sensor-based RiskRadar V4
+Dataset Builder für Sensor-basierte RiskRadar V4
 
 Creates training datasets with:
 - Weekly samples (not just 1st of month)
 - Time-based train/test split
 - Sensor-based labels (FIRMS + USGS)
 - Leakage-free features
+- SEPARATE date ranges for optimal data utilization:
+  * Fire Model:  2024-2025 (where FIRMS data is available - 8.6M detections!)
+  * Quake Model: 2015-2025 (extended 10+ years of USGS data)
 
 Author: RiskRadar Team
 Date: 2025-12-23
+Updated: 2026-01-08 (Separate date ranges per model)
 """
 
 import pandas as pd
@@ -32,27 +36,31 @@ logger = logging.getLogger(__name__)
 
 # ==================== CONFIGURATION ====================
 
-# Dataset Configuration
-START_DATE = '2024-06-01'  # Beginn des Zeitraums
-END_DATE = '2025-11-01'    # Ende (exklusiv für Prediction Window) - ERWEITERT!
-SAMPLE_FREQUENCY_DAYS = 7  # Wöchentliche Samples (nicht täglich = zu viel)
+# Dataset Configuration - SEPARATE DATE RANGES FOR EACH MODEL
+# Fire Model: Limited by FIRMS data availability (2024-2025)
+FIRE_START_DATE = '2024-01-01'  # FIRMS data starts Dec 2023, use full 2024-2025
+FIRE_END_DATE = '2025-11-01'    # End date (exclusive for prediction window)
+
+# Quake Model: Extended historical data (10+ years)
+QUAKE_START_DATE = '2015-01-01'  # Extended: 10+ years of USGS data
+QUAKE_END_DATE = '2025-11-01'    # End date (exclusive for prediction window)
+
+SAMPLE_FREQUENCY_DAYS = 7  # Weekly samples (not daily = too much)
 
 # Train/Test Split Configuration
 TEST_SPLIT_DATE = '2025-07-01'  # Time-based split: everything after this goes to test set
-# Train: 2024-06-01 to 2025-06-30 (~13 months)
-# Test:  2025-07-01 to 2025-11-01 (4 months)
+# Fire Train: 2024-01-01 to 2025-06-30 (~1.5 years, but 8.6M FIRMS detections!)
+# Fire Test:  2025-07-01 to 2025-11-01 (4 months)
+# Quake Train: 2015-01-01 to 2025-06-30 (~10.5 years)
+# Quake Test:  2025-07-01 to 2025-11-01 (4 months)
 
 # Paths - relative to project root, works both locally and in Docker
 OUTPUT_DIR = Path(Config.OUTPUT_DIR)
 BASE_DIR = Path(__file__).parent.parent
-#FIRMS_2024_CSV = BASE_DIR / 'FIRMS_2024_ARCHIVE' / 'fire_archive_M-C61_699932.csv'
-#FIRMS_2025_ARCHIVE_CSV = BASE_DIR / 'FIRMS_2025_NRT' / 'fire_archive_M-C61_699365.csv'
-#FIRMS_2025_NRT_CSV = BASE_DIR / 'FIRMS_2025_NRT' / 'fire_nrt_M-C61_699365.csv'
-#SITES_CSV = Path(Config.DATA_DIR) / 'standorte.csv'
-
-FIRMS_2024_CSV = BASE_DIR / 'FIRMS_2024_ARCHIVE' / 'fire_archive_M-C61_702295.csv'
-FIRMS_2025_ARCHIVE_CSV = BASE_DIR / 'FIRMS_2025_NRT' / 'fire_archive_M-C61_702294.csv'
-FIRMS_2025_NRT_CSV = BASE_DIR / 'FIRMS_2025_NRT' / 'fire_nrt_M-C61_702294'
+FIRMS_2024_CSV = BASE_DIR / 'FIRMS_2024_ARCHIVE' / 'fire_archive_M-C61_699932.csv'
+FIRMS_2025_ARCHIVE_CSV = BASE_DIR / 'FIRMS_2025_NRT' / 'fire_archive_M-C61_699365.csv'
+FIRMS_2025_NRT_CSV = BASE_DIR / 'FIRMS_2025_NRT' / 'fire_nrt_M-C61_699365.csv'
+USGS_HISTORICAL_CSV = Path(Config.DATA_DIR) / 'usgs_historical.csv'  # Historical earthquake data
 SITES_CSV = Path(Config.DATA_DIR) / 'standorte.csv'
 
 
@@ -196,27 +204,68 @@ def load_combined_firms_data() -> pd.DataFrame:
 
 def load_usgs_data_cached() -> pd.DataFrame:
     """
-    Load USGS earthquake data (cached or from API).
+    Load USGS earthquake data from multiple sources (cached, historical CSV, or API).
+    
+    Priority:
+    1. Historical CSV (if exists) - from download_historical_usgs.py
+    2. Cache file (if exists) - from previous runs
+    3. API fetch (if needed)
     
     Returns:
         DataFrame with [latitude, longitude, time, mag, place]
     """
+    # First, try historical CSV (from download_historical_usgs.py)
+    if USGS_HISTORICAL_CSV.exists():
+        logger.info(f"Loading USGS data from historical CSV: {USGS_HISTORICAL_CSV}")
+        df = pd.read_csv(USGS_HISTORICAL_CSV)
+        
+        # Ensure 'time' column is datetime with UTC timezone
+        if 'time' in df.columns:
+            df['time'] = pd.to_datetime(df['time'], format='ISO8601', utc=True)
+        
+        # Check required columns
+        required_cols = ['latitude', 'longitude', 'time', 'mag']
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            logger.error(f"Historical CSV missing columns: {missing_cols}")
+            logger.info("Falling back to cache...")
+        else:
+            logger.info(f"  ✓ Loaded {len(df):,} earthquakes from historical CSV")
+            logger.info(f"  Date range: {df['time'].min()} to {df['time'].max()}")
+            logger.info(f"  Magnitude range: M{df['mag'].min():.1f} - M{df['mag'].max():.1f}")
+            
+            # Add 'place' column if missing
+            if 'place' not in df.columns:
+                df['place'] = ''
+            
+            return df
+    
+    # Fallback: Try cache file
     cache_file = OUTPUT_DIR / 'usgs_earthquakes_cache.csv'
     
     if cache_file.exists():
         logger.info(f"Loading USGS data from cache: {cache_file}")
         df = pd.read_csv(cache_file)
         df['time'] = pd.to_datetime(df['time'], format='ISO8601').dt.tz_localize('UTC')
-        logger.info(f"  Loaded {len(df):,} earthquakes from cache")
+        logger.info(f"  ✓ Loaded {len(df):,} earthquakes from cache")
         return df
     
-    logger.info("USGS cache not found. Fetching from API...")
-    logger.info("  This may take a while for global dataset...")
-    
-    # Here you would fetch all earthquakes for the time period
-    # For now: Placeholder - you would need to use usgs_client
-    logger.error("USGS cache missing! Please run: python usgs_client.py to cache data")
-    raise FileNotFoundError(f"USGS cache not found: {cache_file}")
+    # No data available
+    logger.error("="*60)
+    logger.error("USGS DATA NOT FOUND!")
+    logger.error("="*60)
+    logger.error("\nPlease download earthquake data first:")
+    logger.error("\n  Option 1 (Recommended): Automatic download")
+    logger.error("    python app/download_historical_usgs.py --years 5")
+    logger.error("\n  Option 2: Manual download")
+    logger.error("    See: USGS_DATA_DOWNLOAD_GUIDE.md")
+    logger.error("")
+    raise FileNotFoundError(
+        f"USGS data not found. Expected either:\n"
+        f"  1. {USGS_HISTORICAL_CSV}\n"
+        f"  2. {cache_file}\n"
+        f"Run: python app/download_historical_usgs.py --years 5"
+    )
 
 
 def load_sites(csv_path: Path) -> pd.DataFrame:
@@ -447,13 +496,17 @@ def main():
     logger.info("="*80)
     logger.info("RISKRADAR V4 - SENSOR-BASED DATASET BUILDER")
     logger.info("="*80)
+    logger.info("\nUsing SEPARATE date ranges for optimal data utilization:")
+    logger.info(f"  Fire Model:  {FIRE_START_DATE} to {FIRE_END_DATE} (FIRMS data availability)")
+    logger.info(f"  Quake Model: {QUAKE_START_DATE} to {QUAKE_END_DATE} (Extended 10+ years)")
     
     # 0. Output Directory
     OUTPUT_DIR.mkdir(exist_ok=True, parents=True)
     
-    # 1. Sample Dates generieren
+    # 1. Generate separate sample dates for Fire and Quake models
     logger.info(f"\n1. Generating Sample Dates...")
-    target_dates = generate_sample_dates(START_DATE, END_DATE, SAMPLE_FREQUENCY_DAYS)
+    fire_dates = generate_sample_dates(FIRE_START_DATE, FIRE_END_DATE, SAMPLE_FREQUENCY_DAYS)
+    quake_dates = generate_sample_dates(QUAKE_START_DATE, QUAKE_END_DATE, SAMPLE_FREQUENCY_DAYS)
     
     # 2. Load data
     logger.info(f"\n2. Loading Data...")
@@ -473,11 +526,12 @@ def main():
         })
         usgs_df['time'] = usgs_df['time'].dt.tz_localize('UTC')
     
-    # 3. Build Fire Risk Dataset
+    # 3. Build Fire Risk Dataset (using FIRE date range)
     logger.info(f"\n3. Building FIRE Risk Dataset...")
+    logger.info(f"   Using {len(fire_dates)} samples from {FIRE_START_DATE} to {FIRE_END_DATE}")
     fire_dataset = build_dataset(
         sites_df=sites_df,
-        target_dates=target_dates,
+        target_dates=fire_dates,  # Fire-specific dates
         firms_df=firms_df,
         usgs_df=usgs_df,
         model_type='fire',
@@ -502,9 +556,10 @@ def main():
     # 6. Build Quake Risk Dataset (optional, wenn USGS verfügbar)
     if len(usgs_df) > 0:
         logger.info(f"\n6. Building QUAKE Risk Dataset...")
+        logger.info(f"   Using {len(quake_dates)} samples from {QUAKE_START_DATE} to {QUAKE_END_DATE}")
         quake_dataset = build_dataset(
             sites_df=sites_df,
-            target_dates=target_dates,
+            target_dates=quake_dates,  # Quake-specific dates (10+ years!)
             firms_df=firms_df,
             usgs_df=usgs_df,
             model_type='quake',

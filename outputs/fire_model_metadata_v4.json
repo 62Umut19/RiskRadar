@@ -1,6 +1,6 @@
 {
   "model_type": "fire",
-  "training_date": "2026-01-04T22:08:54.726256",
+  "training_date": "2026-01-08T15:11:54.709947",
   "hyperparameters": {
     "n_estimators": 200,
     "max_depth": 15,
@@ -35,97 +35,97 @@
   "metrics": {
     "confusion_matrix": [
       [
-        493,
-        4
+        425,
+        148
       ],
       [
-        17,
-        4
+        23,
+        76
       ]
     ],
-    "recall": 0.19047619047619047,
-    "precision": 0.5,
-    "f1": 0.27586206896551724,
-    "pr_auc": 0.28884920090531885,
-    "roc_auc": 0.7374724537702405,
-    "accuracy": 0.9594594594594594,
-    "baseline_accuracy": 0.9594594594594594,
+    "recall": 0.7676767676767676,
+    "precision": 0.3392857142857143,
+    "f1": 0.47058823529411764,
+    "pr_auc": 0.4434120122153561,
+    "roc_auc": 0.8120295450138383,
+    "accuracy": 0.7455357142857143,
+    "baseline_accuracy": 0.8526785714285714,
     "feature_importance": [
       {
-        "feature": "fires_30d_count",
-        "importance": 0.1150309189611821
-      },
-      {
-        "feature": "humidity_min",
-        "importance": 0.11466868076203958
+        "feature": "temp_max",
+        "importance": 0.11547784959960178
       },
       {
         "feature": "humidity_mean",
-        "importance": 0.10202254649335002
+        "importance": 0.10705844082794246
       },
       {
-        "feature": "wind_max",
-        "importance": 0.080211063067495
-      },
-      {
-        "feature": "rain_total",
-        "importance": 0.07262302184631375
-      },
-      {
-        "feature": "temp_max",
-        "importance": 0.06994461404429508
-      },
-      {
-        "feature": "temp_mean",
-        "importance": 0.06837888260272275
+        "feature": "humidity_min",
+        "importance": 0.10050344527590342
       },
       {
         "feature": "longitude",
-        "importance": 0.055111786996673844
+        "importance": 0.1001986628348156
+      },
+      {
+        "feature": "temp_mean",
+        "importance": 0.0989898420422909
       },
       {
         "feature": "latitude",
-        "importance": 0.04941794531840367
+        "importance": 0.08587856669355205
       },
       {
-        "feature": "fire_avg_frp_7d",
-        "importance": 0.04230762253704346
+        "feature": "wind_max",
+        "importance": 0.08160985819673588
       },
       {
-        "feature": "month",
-        "importance": 0.04086796163083683
-      },
-      {
-        "feature": "fire_max_frp_7d",
-        "importance": 0.039926619261438166
+        "feature": "rain_total",
+        "importance": 0.07872389760511112
       },
       {
         "feature": "dry_days",
-        "importance": 0.031120258707732735
+        "importance": 0.05007785820668022
       },
       {
-        "feature": "fire_avg_brightness_7d",
-        "importance": 0.027085969953162176
+        "feature": "month",
+        "importance": 0.049899683636813304
       },
       {
-        "feature": "fire_max_brightness_7d",
-        "importance": 0.02659050457159541
-      },
-      {
-        "feature": "fires_persistent_days",
-        "importance": 0.02141684555831691
+        "feature": "fires_30d_count",
+        "importance": 0.04913752534395913
       },
       {
         "feature": "season",
-        "importance": 0.020966575955671175
+        "importance": 0.019455713450038287
+      },
+      {
+        "feature": "fire_max_frp_7d",
+        "importance": 0.012629382184266288
+      },
+      {
+        "feature": "fire_avg_frp_7d",
+        "importance": 0.012416060043448317
+      },
+      {
+        "feature": "fire_max_brightness_7d",
+        "importance": 0.011761399694366754
+      },
+      {
+        "feature": "fire_avg_brightness_7d",
+        "importance": 0.009753711000183178
       },
       {
         "feature": "days_since_last_fire",
-        "importance": 0.011865121382157326
+        "importance": 0.0064311121967147635
       },
       {
         "feature": "fires_7d_count",
-        "importance": 0.010443060349570002
+        "importance": 0.005673348268617599
+      },
+      {
+        "feature": "fires_persistent_days",
+        "importance": 0.004323642898958851
       }
     ]
   }

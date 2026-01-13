@@ -51,6 +51,15 @@ data/cache/*.csv
 # outputs/*.csv
 # outputs/*.html
 
+# Documentation files (zu viele, nicht essential)
+*.md
+!README.md
+*_DOKUMENTATION*
+*GUIDE*
+*STATUS*
+*SUMMARY*
+*CHANGELOG*
+
 # Environment variables
 .env.local
 .env.production

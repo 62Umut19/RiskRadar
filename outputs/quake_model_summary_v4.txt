@@ -2,7 +2,7 @@
 QUAKE RISK MODEL V4 - TRAINING SUMMARY
 ============================================================
 
-Training Date: 2026-01-04T22:09:03.842081
+Training Date: 2026-01-08T15:12:04.257754
 Model Type: quake
 
 ARCHITECTURE:
@@ -26,27 +26,27 @@ FEATURES:
     - season
 
 EVALUATION METRICS (Test Set):
-  Recall:    0.000
-  Precision: 0.000
-  F1-Score:  0.000
-  PR-AUC:    0.090
-  ROC-AUC:   0.938
-  Accuracy:  0.959
+  Recall:    0.932
+  Precision: 0.411
+  F1-Score:  0.571
+  PR-AUC:    0.802
+  ROC-AUC:   0.927
+  Accuracy:  0.736
 
 CONFUSION MATRIX:
               Predicted
               0      1
-    Actual 0   497    14
-           1     7     0
+    Actual 0  2224   993
+           1    51   694
 
 TOP 10 FEATURES:
-  longitude                     : 0.1805
-  latitude                      : 0.1712
-  month                         : 0.1664
-  quake_max_mag_30d             : 0.1393
-  quake_avg_mag_30d             : 0.1306
-  days_since_last_quake         : 0.0943
-  season                        : 0.0638
-  quakes_30d_count              : 0.0435
-  seismic_trend                 : 0.0047
-  quakes_7d_count               : 0.0029
+  longitude                     : 0.4691
+  latitude                      : 0.3235
+  month                         : 0.0462
+  quake_max_mag_30d             : 0.0406
+  days_since_last_quake         : 0.0399
+  quake_avg_mag_30d             : 0.0364
+  quakes_30d_count              : 0.0240
+  season                        : 0.0128
+  seismic_trend                 : 0.0036
+  quakes_7d_count               : 0.0033

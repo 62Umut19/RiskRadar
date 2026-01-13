@@ -39,6 +39,42 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     return distance
 
 
+def haversine_distance_vectorized(lat1: float, lon1: float, lat2_array, lon2_array):
+    """
+    Calculate haversine distance from one point to many points (VECTORIZED - much faster!).
+    
+    This is 10-100x faster than calling haversine_distance in a loop.
+    
+    Args:
+        lat1, lon1: Coordinates of reference point
+        lat2_array: Array/Series of latitudes
+        lon2_array: Array/Series of longitudes
+    
+    Returns:
+        Array of distances in kilometers
+    """
+    import numpy as np
+    
+    # Earth radius in kilometers
+    R = 6371.0
+    
+    # Convert to radians
+    lat1_rad = np.radians(lat1)
+    lon1_rad = np.radians(lon1)
+    lat2_rad = np.radians(lat2_array)
+    lon2_rad = np.radians(lon2_array)
+    
+    # Haversine formula (vectorized)
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+    
+    a = np.sin(dlat / 2)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2)**2
+    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
+    
+    distances = R * c
+    return distances
+
+
 def extract_coordinates_from_geometry(geometry: Dict[str, Any]) -> List[Tuple[float, float]]:
     """
     Extract all coordinate pairs (lat, lon) from a GeoJSON geometry.
