@@ -14,11 +14,66 @@ Features:
 
 import requests
 import logging
+import time
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 import pandas as pd
 
 logger = logging.getLogger(__name__)
+
+# Rate limiting configuration
+_last_request_time = 0
+MIN_REQUEST_INTERVAL = 0.3  # 300ms between requests (~3 req/sec, safe for free tier)
+MAX_RETRIES = 3
+RETRY_BACKOFF_BASE = 2  # Exponential backoff: 2s, 4s, 8s
+
+
+def _rate_limited_request(url: str, params: dict, timeout: int = 30) -> requests.Response:
+    """
+    Make a rate-limited request with retry logic for 429 errors.
+    
+    Args:
+        url: API URL
+        params: Query parameters
+        timeout: Request timeout in seconds
+        
+    Returns:
+        Response object
+        
+    Raises:
+        requests.HTTPError: If all retries fail
+    """
+    global _last_request_time
+    
+    for attempt in range(MAX_RETRIES):
+        # Rate limiting: ensure minimum interval between requests
+        elapsed = time.time() - _last_request_time
+        if elapsed < MIN_REQUEST_INTERVAL:
+            time.sleep(MIN_REQUEST_INTERVAL - elapsed)
+        
+        _last_request_time = time.time()
+        
+        try:
+            response = requests.get(url, params=params, timeout=timeout)
+            
+            if response.status_code == 429:
+                # Rate limited - exponential backoff
+                wait_time = RETRY_BACKOFF_BASE ** (attempt + 1)
+                logger.warning(f"Rate limited (429). Waiting {wait_time}s before retry {attempt + 1}/{MAX_RETRIES}...")
+                time.sleep(wait_time)
+                continue
+            
+            response.raise_for_status()
+            return response
+            
+        except requests.exceptions.Timeout:
+            wait_time = RETRY_BACKOFF_BASE ** (attempt + 1)
+            logger.warning(f"Request timeout. Waiting {wait_time}s before retry {attempt + 1}/{MAX_RETRIES}...")
+            time.sleep(wait_time)
+            continue
+    
+    # All retries exhausted
+    raise requests.HTTPError(f"Failed after {MAX_RETRIES} retries")
 
 
 def get_historical_weather(
@@ -65,8 +120,7 @@ def get_historical_weather(
             'timezone': 'auto'
         }
         
-        response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status()
+        response = _rate_limited_request(url, params, timeout=30)
         
         data = response.json()
         
@@ -121,8 +175,7 @@ def get_forecast_weather(
             'timezone': 'auto'
         }
         
-        response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status()
+        response = _rate_limited_request(url, params, timeout=30)
         
         data = response.json()
         

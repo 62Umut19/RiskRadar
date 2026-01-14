@@ -277,6 +277,7 @@ def generate_labels_for_dataset(
                 'quake_num_significant': quake_meta['num_significant']
             })
     
+    logger.info(f"  Label progress: {total}/{total} (100.0%) - Complete!")
     df = pd.DataFrame(results)
     
     # Stats
