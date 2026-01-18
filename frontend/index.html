@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RiskRadar - Risk Dashboard</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="header">
+        <h1>🌍 RiskRadar Dashboard</h1>
+        <div class="metadata" id="metadata">
+            <span id="generated-at">Loading...</span>
+            <span id="site-count"></span>
+        </div>
+    </header>
+    
+    <main class="main-content">
+        <aside class="sidebar">
+            <div class="panel">
+                <h2>📊 Statistics</h2>
+                <div class="stats" id="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">🔥 Avg Fire Risk</span>
+                        <span class="stat-value" id="avg-fire">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">🌍 Avg Quake Risk</span>
+                        <span class="stat-value" id="avg-quake">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">⚠️ Avg Combined</span>
+                        <span class="stat-value" id="avg-combined">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>🏷️ Legend</h2>
+                <div class="legend">
+                    <div class="legend-item">
+                        <span class="legend-marker red"></span>
+                        <span>Very High (≥75%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-marker orange"></span>
+                        <span>High (50-75%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-marker yellow"></span>
+                        <span>Medium (25-50%)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-marker green"></span>
+                        <span>Low (<25%)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>📍 Sites</h2>
+                <div class="site-list" id="site-list">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </aside>
+        
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </main>
+    
+    <!-- Leaflet JS -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.min.js"></script>
+    
+    <script src="dashboard.js"></script>
+</body>
+</html>

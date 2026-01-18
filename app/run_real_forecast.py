@@ -372,6 +372,89 @@ def create_dual_risk_map(predictions_df: pd.DataFrame, output_path: Path):
     logger.info(f"  ✓ Map saved: {output_path}")
 
 
+def export_json_data(predictions_df: pd.DataFrame, output_dir: Path, target_date: pd.Timestamp):
+    """
+    Export predictions as JSON files for the frontend dashboard.
+    
+    Creates:
+        - forecast_data.json: Site predictions with risk scores
+        - forecast_metadata.json: Statistics and generation info
+    """
+    import json
+    
+    logger.info("  Exporting JSON data for frontend...")
+    
+    # Helper to determine risk level
+    def get_risk_level(score):
+        if score >= 75:
+            return "Very High"
+        elif score >= 50:
+            return "High"
+        elif score >= 25:
+            return "Medium"
+        return "Low"
+    
+    # Build sites array
+    sites = []
+    for _, row in predictions_df.iterrows():
+        sites.append({
+            "name": row['site_name'],
+            "lat": row['lat'],
+            "lon": row['lon'],
+            "risk_level": get_risk_level(row['combined_risk_score']),
+            "risks": {
+                "fire": {
+                    "score": round(row['fire_risk_score'], 2),
+                    "probability": round(row['fire_probability'], 4)
+                },
+                "quake": {
+                    "score": round(row['quake_risk_score'], 2),
+                    "probability": round(row['quake_probability'], 4)
+                },
+                "combined": {
+                    "score": round(row['combined_risk_score'], 2),
+                    "probability": round(row['combined_probability'], 4)
+                }
+            }
+        })
+    
+    # forecast_data.json
+    forecast_data = {
+        "generated_at": target_date.isoformat(),
+        "forecast_window_hours": 72,
+        "sites": sites
+    }
+    
+    data_path = output_dir / 'forecast_data.json'
+    with open(data_path, 'w', encoding='utf-8') as f:
+        json.dump(forecast_data, f, indent=2, ensure_ascii=False)
+    logger.info(f"  ✓ JSON saved: {data_path}")
+    
+    # forecast_metadata.json
+    metadata = {
+        "version": "4.0",
+        "generated_at": target_date.isoformat(),
+        "model_info": {
+            "fire_model": "fire_model_v4.pkl",
+            "quake_model": "quake_model_v4.pkl"
+        },
+        "statistics": {
+            "total_sites": len(predictions_df),
+            "avg_fire_risk": round(predictions_df['fire_risk_score'].mean(), 2),
+            "avg_quake_risk": round(predictions_df['quake_risk_score'].mean(), 2),
+            "avg_combined_risk": round(predictions_df['combined_risk_score'].mean(), 2),
+            "max_fire_risk": round(predictions_df['fire_risk_score'].max(), 2),
+            "max_quake_risk": round(predictions_df['quake_risk_score'].max(), 2),
+            "max_combined_risk": round(predictions_df['combined_risk_score'].max(), 2)
+        }
+    }
+    
+    meta_path = output_dir / 'forecast_metadata.json'
+    with open(meta_path, 'w', encoding='utf-8') as f:
+        json.dump(metadata, f, indent=2, ensure_ascii=False)
+    logger.info(f"  ✓ JSON saved: {meta_path}")
+
+
 # ==================== MAIN ====================
 
 def main():
@@ -439,7 +522,10 @@ def main():
     predictions_df.to_csv(csv_path, index=False)
     logger.info(f"  ✓ CSV saved: {csv_path}")
     
-    # HTML Map
+    # JSON for frontend
+    export_json_data(predictions_df, OUTPUT_DIR, target_date)
+    
+    # HTML Map (backward compatibility)
     map_path = OUTPUT_DIR / 'sensor_forecast_map.html'
     create_dual_risk_map(predictions_df, map_path)
     
@@ -464,8 +550,10 @@ def main():
     logger.info("="*80)
     logger.info(f"\nOutputs:")
     logger.info(f"  - CSV:  {csv_path}")
+    logger.info(f"  - JSON: {OUTPUT_DIR / 'forecast_data.json'}")
+    logger.info(f"  - JSON: {OUTPUT_DIR / 'forecast_metadata.json'}")
     logger.info(f"  - Map:  {map_path}")
-    logger.info(f"\nOpen map in browser to explore results!")
+    logger.info(f"\nOpen map in browser or frontend/index.html to explore results!")
 
 
 if __name__ == "__main__":
