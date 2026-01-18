@@ -16,6 +16,7 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+from config import Config
 
 # Load environment variables from .env file
 env_path = Path(__file__).parent.parent / '.env'
@@ -152,10 +153,9 @@ def main():
         logger.error("=" * 80)
         sys.exit(1)
     
-    # Paths
-    base_dir = Path(__file__).parent.parent
-    nrt_dir = base_dir / 'FIRMS_2025_NRT'
-    nrt_file = nrt_dir / 'fire_nrt_M-C61_699365.csv'
+    # Paths (from Config)
+    nrt_dir = Path(Config.FIRMS_2025_DIR)
+    nrt_file = Path(Config.FIRMS_NRT_2025_FILE)
     
     nrt_dir.mkdir(exist_ok=True)
     

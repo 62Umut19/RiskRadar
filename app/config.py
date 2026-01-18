@@ -30,6 +30,14 @@ class Config:
     
     STANDORTE_FILE = os.path.join(DATA_DIR, "standorte.csv")
     
+    # FIRMS Data Paths
+    FIRMS_2024_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "FIRMS_2024_ARCHIVE")
+    FIRMS_2025_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "FIRMS_2025_NRT")
+
+    FIRMS_ARCHIVE_2024_FILE = os.path.join(FIRMS_2024_DIR, "fire_archive_M-C61_699932.csv")
+    FIRMS_ARCHIVE_2025_FILE = os.path.join(FIRMS_2025_DIR, "fire_archive_M-C61_699365.csv")
+    FIRMS_NRT_2025_FILE = os.path.join(FIRMS_2025_DIR, "fire_nrt_M-C61_699365.csv")
+    
     # Output Files
     FIRE_MODEL_FILE = os.path.join(OUTPUT_DIR, "fire_model_v4.pkl")
     QUAKE_MODEL_FILE = os.path.join(OUTPUT_DIR, "quake_model_v4.pkl")
