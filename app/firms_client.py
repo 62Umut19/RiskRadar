@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 import numpy as np
+from config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -33,13 +34,10 @@ class FIRMSClient:
             data_dir: Directory containing FIRMS CSV files
                      Default: ../FIRMS_2024_ARCHIVE/ and ../FIRMS_2025_NRT/
         """
-        # Default to project directory with multiple FIRMS folders
-        base_dir = Path(__file__).parent.parent
-        
-        # Support for multiple FIRMS data directories
-        self.archive_2024_file = base_dir / 'FIRMS_2024_ARCHIVE' / 'fire_archive_M-C61_699932.csv'
-        self.archive_2025_file = base_dir / 'FIRMS_2025_NRT' / 'fire_archive_M-C61_699365.csv'
-        self.nrt_2025_file = base_dir / 'FIRMS_2025_NRT' / 'fire_nrt_M-C61_699365.csv'
+        # Use centralized paths from Config
+        self.archive_2024_file = Path(Config.FIRMS_ARCHIVE_2024_FILE)
+        self.archive_2025_file = Path(Config.FIRMS_ARCHIVE_2025_FILE)
+        self.nrt_2025_file = Path(Config.FIRMS_NRT_2025_FILE)
         
         # Cache loaded data
         self._data = None
@@ -57,7 +55,7 @@ class FIRMSClient:
         
         # Load 2024 archive data
         if self.archive_2024_file.exists():
-            logger.info(f"Loading FIRMS data from ../FIRMS_2024_ARCHIVE/fire_archive_M-C61_699932.csv...")
+            logger.info(f"Loading FIRMS data from {self.archive_2024_file}...")
             try:
                 df_2024 = pd.read_csv(self.archive_2024_file)
                 df_2024['acq_date'] = pd.to_datetime(df_2024['acq_date'])
@@ -70,7 +68,7 @@ class FIRMSClient:
         
         # Load 2025 archive data
         if self.archive_2025_file.exists():
-            logger.info(f"Loading FIRMS data from ../FIRMS_2025_NRT/fire_archive_M-C61_699365.csv...")
+            logger.info(f"Loading FIRMS data from {self.archive_2025_file}...")
             try:
                 df_2025_archive = pd.read_csv(self.archive_2025_file)
                 df_2025_archive['acq_date'] = pd.to_datetime(df_2025_archive['acq_date'])
@@ -83,7 +81,7 @@ class FIRMSClient:
         
         # Load 2025 NRT data
         if self.nrt_2025_file.exists():
-            logger.info(f"Loading FIRMS data from ../FIRMS_2025_NRT/fire_nrt_M-C61_699365.csv...")
+            logger.info(f"Loading FIRMS data from {self.nrt_2025_file}...")
             try:
                 df_2025_nrt = pd.read_csv(self.nrt_2025_file)
                 df_2025_nrt['acq_date'] = pd.to_datetime(df_2025_nrt['acq_date'])

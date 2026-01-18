@@ -57,9 +57,9 @@ TEST_SPLIT_DATE = '2025-07-01'  # Time-based split: everything after this goes t
 # Paths - relative to project root, works both locally and in Docker
 OUTPUT_DIR = Path(Config.OUTPUT_DIR)
 BASE_DIR = Path(__file__).parent.parent
-FIRMS_2024_CSV = BASE_DIR / 'FIRMS_2024_ARCHIVE' / 'fire_archive_M-C61_699932.csv'
-FIRMS_2025_ARCHIVE_CSV = BASE_DIR / 'FIRMS_2025_NRT' / 'fire_archive_M-C61_699365.csv'
-FIRMS_2025_NRT_CSV = BASE_DIR / 'FIRMS_2025_NRT' / 'fire_nrt_M-C61_699365.csv'
+FIRMS_2024_CSV = Path(Config.FIRMS_ARCHIVE_2024_FILE)
+FIRMS_2025_ARCHIVE_CSV = Path(Config.FIRMS_ARCHIVE_2025_FILE)
+FIRMS_2025_NRT_CSV = Path(Config.FIRMS_NRT_2025_FILE)
 USGS_HISTORICAL_CSV = Path(Config.DATA_DIR) / 'usgs_historical.csv'  # Historical earthquake data
 SITES_CSV = Path(Config.DATA_DIR) / 'standorte.csv'
 

@@ -119,7 +119,7 @@ FIRMS_MAP_KEY=dein_map_key_hier
 **🔥 Download 1: FIRMS 2024 Archive**
 - **Link:** https://firms.modaps.eosdis.nasa.gov/download/
 - **Auswahl:** `Create New Request`  → `World`  → `MODIS` → `Timeframe 2024-01-01 - 2024-12-31` → `CSV` → `Submit`
-- **Dateiname:** `fire_archive_M-C61_XXXXXX.csv`
+- **Dateiname:** `fire_archive_M-C61.csv`
 - **Speicherort:** `FIRMS_2024_ARCHIVE/`
 - **Zweck:** Historische Trainingsdaten (ganzes Jahr 2024)
 
@@ -127,8 +127,8 @@ FIRMS_MAP_KEY=dein_map_key_hier
 - **Link:** https://firms.modaps.eosdis.nasa.gov/download/
 - **Auswahl:** `Create New Request`  → `World`  → `MODIS` → `Timeframe 2025-01-01 - 2025-12-31` → `CSV` → `Submit`
 - **Enthalten:**
-  - `fire_archive_M-C61_XXXXXX.csv` - Archivdaten 2025
-  - `fire_nrt_M-C61_XXXXXX.csv` - Letzte 7 Tage (NRT)
+  - `fire_archive_M-C61.csv` - Archivdaten 2025
+  - `fire_nrt_M-C61.csv` - Letzte 7 Tage (NRT)
 - **Speicherort:** Beide in `FIRMS_2025_NRT/` entpacken
 - **Zweck:** Aktuelle Daten für Vorhersagen
 
@@ -136,10 +136,10 @@ FIRMS_MAP_KEY=dein_map_key_hier
 ```
 RiskRadar/
 ├── FIRMS_2024_ARCHIVE/
-│   └── fire_archive_M-C61_XXXXXX.csv
+│   └── fire_archive_M-C61.csv
 ├── FIRMS_2025_NRT/
-│   ├── fire_nrt_M-C61_XXXXXX.csv
-│   └── fire_archive_M-C61_XXXXXX.csv
+│   ├── fire_nrt_M-C61.csv
+│   └── fire_archive_M-C61.csv
 └── .env                                  (mit deinem MAP_KEY)
 ```
 

@@ -104,7 +104,7 @@ def fetch_sensor_data():
     firms_client = FIRMSClient()
     
     # Versuche Cache, sonst API
-    firms_csv = Path('FIRMS_2025_NRT/fire_nrt_M-C61_699365.csv')  # Aktuellste NRT Daten
+    firms_csv = Path(Config.FIRMS_NRT_2025_FILE)  # Aktuellste NRT Daten
     if firms_csv.exists():
         logger.info(f"    Using cached FIRMS: {firms_csv}")
         firms_df = pd.read_csv(firms_csv)
@@ -420,7 +420,7 @@ def main():
             quake_model=quake_model,
             fire_features=fire_features,
             quake_features=quake_features,
-            weather_api_key=None  # OpenMeteo doesn't need API key
+            weather_api_key=Config.OPENWEATHER_API_KEY
         )
         
         predictions.append(pred)
