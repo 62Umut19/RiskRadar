@@ -200,6 +200,7 @@ body {
     flex-direction: column;
     gap: var(--gap);
     flex-shrink: 0;
+    min-height: 0;
 }
 
 .map-container {
@@ -540,8 +541,10 @@ body {
    Site Detail Panel
    ======================================== */
 .site-detail-panel {
-    flex-shrink: 0;
-    min-height: 280px;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .site-detail-placeholder {
@@ -566,6 +569,9 @@ body {
 
 .site-detail-content {
     padding: 16px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .site-detail-header {
@@ -643,6 +649,35 @@ body {
     font-weight: 500;
 }
 
+.icon-button {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    font-size: 1rem;
+    appearance: none;
+}
+
+.backup-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    appearance: none;
+    font: inherit;
+}
+
+.backup-chip:hover {
+    border-color: rgba(34, 197, 94, 0.4);
+}
+
 /* ========================================
    Sites List Panel
    ======================================== */
@@ -667,6 +702,8 @@ body {
     color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.2s;
+    font: inherit;
+    appearance: none;
 }
 
 .filter-btn:hover {
@@ -678,6 +715,14 @@ body {
     background: var(--accent-combined);
     border-color: var(--accent-combined);
     color: white;
+}
+
+.filter-btn:focus-visible,
+.site-item:focus-visible,
+.backup-chip:focus-visible,
+.icon-button:focus-visible {
+    outline: 2px solid var(--accent-combined);
+    outline-offset: 2px;
 }
 
 .site-list {
@@ -697,6 +742,11 @@ body {
     margin-bottom: 8px;
     cursor: pointer;
     transition: all 0.2s;
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    appearance: none;
 }
 
 .site-item:hover {
@@ -823,6 +873,7 @@ body {
 @media (max-width: 1200px) {
     .main-content {
         flex-wrap: wrap;
+        overflow-y: auto;
     }
 
     .panel-left,

@@ -33,6 +33,7 @@ async function init() {
     try {
         await loadData();
         initMap();
+        window.addEventListener('resize', invalidateMapSize);
         renderMarkers();
         updateMetadataUI();
         updateStatsUI();
@@ -64,11 +65,21 @@ async function loadData() {
     forecastData = await dataResponse.json();
     metadata = await metaResponse.json();
 
+    if (!forecastData || !Array.isArray(forecastData.sites)) {
+        throw new Error('Invalid forecast data format: sites[] missing');
+    }
+
     if (siteMetaResponse && siteMetaResponse.ok) {
         siteMetadata = await siteMetaResponse.json();
     } else {
         console.warn('Site metadata not found, using defaults');
         siteMetadata = { sites: {} };
+    }
+
+    if (!siteMetadata || typeof siteMetadata !== 'object') {
+        siteMetadata = { sites: {} };
+    } else if (!siteMetadata.sites || typeof siteMetadata.sites !== 'object') {
+        siteMetadata.sites = {};
     }
 
     // Enrich forecast data with site metadata
@@ -169,6 +180,11 @@ function initMap() {
         maxZoom: 19,
         attribution: CONFIG.mapAttribution
     }).addTo(map);
+}
+
+function invalidateMapSize() {
+    if (!map) return;
+    requestAnimationFrame(() => map.invalidateSize());
 }
 
 // ============================================
@@ -279,14 +295,14 @@ function renderSiteList() {
         const isSelected = selectedSite && selectedSite.name === site.name;
 
         return `
-            <div class="site-item ${isSelected ? 'selected' : ''}" onclick="selectSiteByName('${site.name}')">
+            <button type="button" class="site-item ${isSelected ? 'selected' : ''}" onclick="selectSiteByName('${site.name}')" ${isSelected ? 'aria-current="true"' : ''}>
                 <span class="site-marker ${level}"></span>
                 <div class="site-info">
                     <span class="site-name">${site.name}</span>
                     <span class="site-type">${site.type} • ${site.region}</span>
                 </div>
                 <span class="site-risk" style="color: ${getRiskColor(score)}">${score.toFixed(1)}%</span>
-            </div>
+            </button>
         `;
     }).join('');
 }
@@ -325,6 +341,7 @@ function closeSiteDetails() {
 
     // Hide the entire right panel
     document.querySelector('.panel-right').style.display = 'none';
+    invalidateMapSize();
 
     // Close all popups
     markers.forEach(marker => marker.closePopup());
@@ -336,6 +353,7 @@ function closeSiteDetails() {
 function showSiteDetails(site) {
     // Show the right panel
     document.querySelector('.panel-right').style.display = 'flex';
+    invalidateMapSize();
 
     const content = document.getElementById('site-detail-content');
 
@@ -367,7 +385,7 @@ function showSiteDetails(site) {
                         ${criticalityLabel}
                     </span>
                 </div>
-                <button onclick="closeSiteDetails()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; font-size: 1rem;" title="Schließen">
+                <button type="button" class="icon-button site-detail-close" onclick="closeSiteDetails()" title="Schließen" aria-label="Schließen">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -450,8 +468,7 @@ function showSiteDetails(site) {
                 </div>
                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                     ${site.backup_sites.map(b => `
-                        <span style="background: rgba(34,197,94,0.15); color: #22c55e; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;"
-                              onclick="selectSiteByName('${b}')">${b}</span>
+                        <button type="button" class="backup-chip" onclick="selectSiteByName('${b}')">${b}</button>
                     `).join('')}
                 </div>
             </div>
@@ -463,10 +480,15 @@ function showSiteDetails(site) {
 // Filter Buttons
 // ============================================
 function initFilterButtons() {
-    document.querySelectorAll('.filter-btn').forEach(btn => {
+    const buttons = document.querySelectorAll('.filter-btn');
+    buttons.forEach(btn => {
+        btn.setAttribute('aria-pressed', btn.classList.contains('active'));
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            buttons.forEach(b => {
+                const isActive = b === btn;
+                b.classList.toggle('active', isActive);
+                b.setAttribute('aria-pressed', isActive);
+            });
             currentFilter = btn.dataset.filter;
             renderSiteList();
         });
