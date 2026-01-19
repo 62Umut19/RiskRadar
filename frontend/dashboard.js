@@ -5,8 +5,8 @@
 
 // Configuration
 const CONFIG = {
-    jsonDataPath: '../outputs/forecast_data.json',
-    metadataPath: '../outputs/forecast_metadata.json'
+    jsonDataPath: './data/forecast_data.json',
+    metadataPath: './data/forecast_metadata.json'
 };
 
 // Global state

@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 OUTPUT_DIR = Path(Config.OUTPUT_DIR)
 DATA_DIR = Path(Config.DATA_DIR)
+FRONTEND_DATA_DIR = Path(__file__).parent.parent / 'frontend' / 'data'
 SITES_CSV = DATA_DIR / 'standorte.csv'
 
 # Model Paths
@@ -522,8 +523,12 @@ def main():
     predictions_df.to_csv(csv_path, index=False)
     logger.info(f"  ✓ CSV saved: {csv_path}")
     
-    # JSON for frontend
+    # JSON for frontend (outputs dir)
     export_json_data(predictions_df, OUTPUT_DIR, target_date)
+    
+    # JSON for frontend (frontend/data dir - duplicate for easier access)
+    FRONTEND_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    export_json_data(predictions_df, FRONTEND_DATA_DIR, target_date)
     
     # HTML Map (backward compatibility)
     map_path = OUTPUT_DIR / 'sensor_forecast_map.html'
@@ -552,6 +557,8 @@ def main():
     logger.info(f"  - CSV:  {csv_path}")
     logger.info(f"  - JSON: {OUTPUT_DIR / 'forecast_data.json'}")
     logger.info(f"  - JSON: {OUTPUT_DIR / 'forecast_metadata.json'}")
+    logger.info(f"  - JSON: {FRONTEND_DATA_DIR / 'forecast_data.json'}")
+    logger.info(f"  - JSON: {FRONTEND_DATA_DIR / 'forecast_metadata.json'}")
     logger.info(f"  - Map:  {map_path}")
     logger.info(f"\nOpen map in browser or frontend/index.html to explore results!")
 
