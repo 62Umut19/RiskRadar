@@ -420,7 +420,7 @@ def main():
             quake_model=quake_model,
             fire_features=fire_features,
             quake_features=quake_features,
-            weather_api_key=Config.OPENWEATHER_API_KEY  # Use real weather data
+            weather_api_key=Config.OPENWEATHER_API_KEY
         )
         
         predictions.append(pred)
