@@ -10,6 +10,7 @@ const CONFIG = {
     jsonDataPath: './data/forecast_data.json',
     metadataPath: './data/forecast_metadata.json',
     siteMetadataPath: './data/site_metadata.json',
+    playbooksPath: './data/playbooks.json',
     topRisksCount: 10,
     mapTileUrl: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
     mapAttribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
@@ -23,6 +24,7 @@ let markers = [];
 let forecastData = null;
 let metadata = null;
 let siteMetadata = null;
+let playbooksData = null;
 let selectedSite = null;
 let currentFilter = 'all';
 
@@ -80,6 +82,20 @@ async function loadData() {
         siteMetadata = { sites: {} };
     } else if (!siteMetadata.sites || typeof siteMetadata.sites !== 'object') {
         siteMetadata.sites = {};
+    }
+
+    // Load playbooks
+    try {
+        const playbooksResponse = await fetch(CONFIG.playbooksPath);
+        if (playbooksResponse.ok) {
+            playbooksData = await playbooksResponse.json();
+        } else {
+            console.warn('Playbooks not found, using empty defaults');
+            playbooksData = { playbooks: {} };
+        }
+    } catch {
+        console.warn('Failed to load playbooks');
+        playbooksData = { playbooks: {} };
     }
 
     // Enrich forecast data with site metadata
@@ -473,6 +489,111 @@ function showSiteDetails(site) {
                 </div>
             </div>
         ` : ''}
+        
+        <!-- Playbook Section -->
+        ${getPlaybookHTML(site)}
+    `;
+}
+
+// ============================================
+// Playbook Rendering
+// ============================================
+function getPlaybookHTML(site) {
+    if (!playbooksData || !playbooksData.playbooks) return '';
+
+    // Determine primary risk driver
+    const fireRisk = site.risks.fire?.score || 0;
+    const quakeRisk = site.risks.quake?.score || 0;
+    const combinedRisk = site.risks.combined?.score || 0;
+
+    let riskType = 'combined';
+    let primaryRisk = combinedRisk;
+
+    if (fireRisk > quakeRisk && fireRisk > 25) {
+        riskType = 'fire';
+        primaryRisk = fireRisk;
+    } else if (quakeRisk > fireRisk && quakeRisk > 25) {
+        riskType = 'quake';
+        primaryRisk = quakeRisk;
+    }
+
+    // Determine severity
+    let severity = 'low';
+    if (primaryRisk >= 75) severity = 'critical';
+    else if (primaryRisk >= 50) severity = 'high';
+    else if (primaryRisk >= 25) severity = 'medium';
+
+    // Only show playbook if risk is at least medium
+    if (severity === 'low') return '';
+
+    const playbook = playbooksData.playbooks[riskType];
+    if (!playbook) return '';
+
+    // Filter measures by severity
+    const severityOrder = ['low', 'medium', 'high', 'critical'];
+    const currentSeverityIndex = severityOrder.indexOf(severity);
+    const relevantMeasures = playbook.measures.filter(m => {
+        const minIndex = severityOrder.indexOf(m.severity_min);
+        return minIndex <= currentSeverityIndex;
+    });
+
+    const severityColors = {
+        'critical': '#ef4444',
+        'high': '#f97316',
+        'medium': '#eab308'
+    };
+
+    return `
+        <div class="playbook-section" style="margin-top: 16px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; border-left: 3px solid ${playbook.color};">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas ${playbook.icon}" style="color: ${playbook.color};"></i>
+                    <span style="font-weight: 600; font-size: 0.85rem;">${playbook.name}</span>
+                </div>
+                <span style="background: ${severityColors[severity]}22; color: ${severityColors[severity]}; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">
+                    ${severity.toUpperCase()}
+                </span>
+            </div>
+            
+            <!-- Measures -->
+            <div style="margin-bottom: 10px;">
+                <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                    Maßnahmen
+                </div>
+                ${relevantMeasures.slice(0, 4).map(m => `
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <span style="background: ${playbook.color}33; color: ${playbook.color}; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 600;">
+                            ${m.priority}
+                        </span>
+                        <div style="flex: 1; font-size: 0.75rem;">${m.action}</div>
+                        <div style="text-align: right; font-size: 0.65rem; color: var(--text-muted);">
+                            <div>${m.owner}</div>
+                            <div style="color: ${m.sla_hours <= 2 ? '#ef4444' : '#9ca3af'};">${m.sla_hours}h SLA</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <!-- Checklist Preview -->
+            <details style="cursor: pointer;">
+                <summary style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; outline: none;">
+                    <i class="fas fa-clipboard-check"></i> Checkliste (${playbook.checklist.length} Punkte)
+                </summary>
+                <div style="margin-top: 8px; padding-left: 8px;">
+                    ${playbook.checklist.slice(0, 5).map(item => `
+                        <div style="display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 0.7rem; color: var(--text-secondary);">
+                            <i class="far fa-square" style="color: var(--text-muted);"></i>
+                            ${item}
+                        </div>
+                    `).join('')}
+                    ${playbook.checklist.length > 5 ? `
+                        <div style="font-size: 0.65rem; color: var(--text-muted); padding-top: 4px;">
+                            +${playbook.checklist.length - 5} weitere...
+                        </div>
+                    ` : ''}
+                </div>
+            </details>
+        </div>
     `;
 }
 
