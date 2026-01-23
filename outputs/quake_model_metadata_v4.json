@@ -1,0 +1,92 @@
+{
+  "model_type": "quake",
+  "training_date": "2026-01-04T22:09:03.842081",
+  "hyperparameters": {
+    "n_estimators": 200,
+    "max_depth": 15,
+    "min_samples_split": 5,
+    "min_samples_leaf": 2,
+    "max_features": "sqrt",
+    "random_state": 42,
+    "n_jobs": -1,
+    "class_weight": "balanced"
+  },
+  "feature_names": [
+    "quakes_7d_count",
+    "quakes_30d_count",
+    "quake_max_mag_30d",
+    "quake_avg_mag_30d",
+    "quakes_5plus_count",
+    "seismic_trend",
+    "days_since_last_quake",
+    "latitude",
+    "longitude",
+    "month",
+    "season"
+  ],
+  "metrics": {
+    "confusion_matrix": [
+      [
+        497,
+        14
+      ],
+      [
+        7,
+        0
+      ]
+    ],
+    "recall": 0.0,
+    "precision": 0.0,
+    "f1": 0.0,
+    "pr_auc": 0.08979847549130096,
+    "roc_auc": 0.937657254682695,
+    "accuracy": 0.9594594594594594,
+    "baseline_accuracy": 0.9864864864864865,
+    "feature_importance": [
+      {
+        "feature": "longitude",
+        "importance": 0.1804649330081595
+      },
+      {
+        "feature": "latitude",
+        "importance": 0.17122320297148588
+      },
+      {
+        "feature": "month",
+        "importance": 0.16642335772615496
+      },
+      {
+        "feature": "quake_max_mag_30d",
+        "importance": 0.13927339058913107
+      },
+      {
+        "feature": "quake_avg_mag_30d",
+        "importance": 0.130600347398997
+      },
+      {
+        "feature": "days_since_last_quake",
+        "importance": 0.09425314918871215
+      },
+      {
+        "feature": "season",
+        "importance": 0.06376940334875178
+      },
+      {
+        "feature": "quakes_30d_count",
+        "importance": 0.043516034886124384
+      },
+      {
+        "feature": "seismic_trend",
+        "importance": 0.004728085557132369
+      },
+      {
+        "feature": "quakes_7d_count",
+        "importance": 0.0029241862010299757
+      },
+      {
+        "feature": "quakes_5plus_count",
+        "importance": 0.002823909124320824
+      }
+    ]
+  }
+}
