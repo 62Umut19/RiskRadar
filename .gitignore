@@ -34,6 +34,12 @@ ENV/
 *.swo
 .DS_Store
 
+# Node.js / Frontend
+node_modules/
+frontend/node_modules/
+frontend/playwright-report/
+frontend/test-results/
+
 # Project specific - Cache
 data/cache/*.json
 data/cache/*.csv
