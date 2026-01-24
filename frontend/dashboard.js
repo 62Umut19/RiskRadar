@@ -483,9 +483,17 @@ function showSiteDetails(site) {
                     <i class="fas fa-exchange-alt"></i> Backup-Standorte
                 </div>
                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    ${site.backup_sites.map(b => `
-                        <button type="button" class="backup-chip" onclick="selectSiteByName('${b}')">${b}</button>
-                    `).join('')}
+                    ${site.backup_sites.map(b => {
+        const backupSite = forecastData.sites.find(s => s.name === b);
+        const backupRisk = backupSite ? backupSite.risks.combined.score : null;
+        const backupLevel = backupRisk !== null ? getRiskLevel(backupRisk) : 'unknown';
+        return `
+                            <button type="button" class="backup-chip backup-chip-${backupLevel}" onclick="selectSiteByName('${b}')" title="${backupRisk !== null ? `Risiko: ${backupRisk.toFixed(1)}%` : 'Risiko unbekannt'}">
+                                ${b}
+                                ${backupRisk !== null ? `<span class="backup-risk">${backupRisk.toFixed(0)}%</span>` : ''}
+                            </button>
+                        `;
+    }).join('')}
                 </div>
             </div>
         ` : ''}
