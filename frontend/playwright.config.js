@@ -12,6 +12,10 @@ export default defineConfig({
         baseURL: 'http://localhost:3001',
         trace: 'on-first-retry',
         screenshot: 'only-on-failure',
+        // Slow down actions for headed mode observation
+        launchOptions: {
+            slowMo: 300,
+        },
     },
 
     projects: [
