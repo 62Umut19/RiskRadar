@@ -11,6 +11,7 @@ const CONFIG = {
     metadataPath: './data/forecast_metadata.json',
     siteMetadataPath: './data/site_metadata.json',
     playbooksPath: './data/playbooks.json',
+    eventsDataPath: './data/events_data.json',
     topRisksCount: 10,
     mapTileUrl: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
     mapAttribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
@@ -29,6 +30,13 @@ let selectedSite = null;
 let currentFilter = 'all';
 let currentSort = 'risk-desc';
 
+// History View State
+let historyMap = null;
+let eventsData = null;
+let fireLayer = null;
+let quakeLayer = null;
+let currentView = 'forecast';
+
 // ============================================
 // Initialization
 // ============================================
@@ -36,6 +44,7 @@ async function init() {
     try {
         await loadData();
         initMap();
+        initViewTabs();
         window.addEventListener('resize', invalidateMapSize);
         renderMarkers();
         updateMetadataUI();
@@ -678,6 +687,283 @@ function showError(message) {
 function focusSite(lat, lon) {
     const site = forecastData.sites.find(s => s.lat === lat && s.lon === lon);
     if (site) selectSite(site);
+}
+
+// ============================================
+// View Tab Navigation
+// ============================================
+function initViewTabs() {
+    const tabs = document.querySelectorAll('.view-tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => switchView(tab.dataset.view));
+    });
+}
+
+function switchView(viewName) {
+    currentView = viewName;
+
+    // Update tabs
+    document.querySelectorAll('.view-tab').forEach(tab => {
+        const isActive = tab.dataset.view === viewName;
+        tab.classList.toggle('active', isActive);
+        tab.setAttribute('aria-selected', isActive);
+    });
+
+    // Show/hide views
+    document.getElementById('forecast-view').style.display =
+        viewName === 'forecast' ? 'flex' : 'none';
+    document.getElementById('history-view').style.display =
+        viewName === 'history' ? 'flex' : 'none';
+
+    // Toggle header status indicators
+    document.getElementById('forecast-status').style.display =
+        viewName === 'forecast' ? 'flex' : 'none';
+    document.getElementById('forecast-window').style.display =
+        viewName === 'forecast' ? 'flex' : 'none';
+    document.getElementById('history-info').style.display =
+        viewName === 'history' ? 'flex' : 'none';
+
+    // Initialize history map on first switch
+    if (viewName === 'history' && !historyMap) {
+        initHistoryView();
+    }
+
+    // Invalidate map sizes
+    if (viewName === 'forecast' && map) {
+        setTimeout(() => map.invalidateSize(), 100);
+    }
+    if (viewName === 'history' && historyMap) {
+        setTimeout(() => historyMap.invalidateSize(), 100);
+    }
+}
+
+// ============================================
+// History View
+// ============================================
+async function initHistoryView() {
+    console.log('Initializing History View...');
+
+    // Initialize history map
+    historyMap = L.map('history-map', {
+        center: [20, 0],
+        zoom: 2,
+        zoomControl: true
+    });
+
+    L.tileLayer(CONFIG.mapTileUrl, {
+        maxZoom: 19,
+        attribution: CONFIG.mapAttribution
+    }).addTo(historyMap);
+
+    // Create layer groups
+    fireLayer = L.layerGroup().addTo(historyMap);
+    quakeLayer = L.layerGroup().addTo(historyMap);
+
+    // Load events data
+    await loadEventsData();
+
+    // Initialize filters
+    initHistoryFilters();
+
+    // Render events
+    applyHistoryFilters();
+
+    console.log('History View initialized');
+}
+
+async function loadEventsData() {
+    try {
+        console.log('Loading events data from:', CONFIG.eventsDataPath);
+        const response = await fetch(CONFIG.eventsDataPath);
+        if (!response.ok) throw new Error('Events data not found');
+        eventsData = await response.json();
+        console.log(`Loaded ${eventsData.fires?.length || 0} fires, ${eventsData.earthquakes?.length || 0} earthquakes`);
+    } catch (error) {
+        console.warn('Could not load events data:', error);
+        eventsData = { fires: [], earthquakes: [] };
+    }
+}
+
+function initHistoryFilters() {
+    // Time range
+    document.getElementById('history-time-range').addEventListener('change', applyHistoryFilters);
+
+    // Fire filters
+    document.getElementById('show-fires').addEventListener('change', (e) => {
+        document.getElementById('fire-filters').style.opacity = e.target.checked ? '1' : '0.5';
+        applyHistoryFilters();
+    });
+    document.getElementById('fire-brightness-min').addEventListener('input', (e) => {
+        document.getElementById('fire-brightness-value').textContent = e.target.value + 'K';
+        applyHistoryFilters();
+    });
+    document.getElementById('fire-count-min').addEventListener('input', (e) => {
+        document.getElementById('fire-count-value').textContent = e.target.value;
+        applyHistoryFilters();
+    });
+    document.getElementById('fire-high-confidence').addEventListener('change', applyHistoryFilters);
+
+    // Quake filters
+    document.getElementById('show-quakes').addEventListener('change', (e) => {
+        document.getElementById('quake-filters').style.opacity = e.target.checked ? '1' : '0.5';
+        applyHistoryFilters();
+    });
+    document.getElementById('quake-magnitude-min').addEventListener('input', (e) => {
+        document.getElementById('quake-magnitude-value').textContent = parseFloat(e.target.value).toFixed(1);
+        applyHistoryFilters();
+    });
+    document.getElementById('quake-depth-max').addEventListener('input', (e) => {
+        document.getElementById('quake-depth-value').textContent = e.target.value + 'km';
+        applyHistoryFilters();
+    });
+}
+
+function applyHistoryFilters() {
+    const filters = {
+        days: parseInt(document.getElementById('history-time-range').value),
+        showFires: document.getElementById('show-fires').checked,
+        fireBrightnessMin: parseInt(document.getElementById('fire-brightness-min').value),
+        fireCountMin: parseInt(document.getElementById('fire-count-min').value),
+        fireHighConfidence: document.getElementById('fire-high-confidence').checked,
+        showQuakes: document.getElementById('show-quakes').checked,
+        quakeMagnitudeMin: parseFloat(document.getElementById('quake-magnitude-min').value),
+        quakeDepthMax: parseInt(document.getElementById('quake-depth-max').value)
+    };
+
+    const fireCount = renderFireEvents(filters);
+    const quakeCount = renderQuakeEvents(filters);
+
+    // Update total
+    document.getElementById('visible-total-count').textContent =
+        (fireCount + quakeCount).toLocaleString('de-DE');
+}
+
+function renderFireEvents(filters) {
+    fireLayer.clearLayers();
+
+    if (!filters.showFires || !eventsData?.fires) {
+        document.getElementById('visible-fires-count').textContent = '0';
+        return 0;
+    }
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - filters.days);
+
+    const filteredFires = eventsData.fires.filter(fire => {
+        const fireDate = new Date(fire.date);
+        if (fireDate < cutoffDate) return false;
+        if (fire.brightness < filters.fireBrightnessMin) return false;
+        if (fire.count < filters.fireCountMin) return false;
+        if (filters.fireHighConfidence && fire.confidence !== 'high') return false;
+        return true;
+    });
+
+    filteredFires.forEach(fire => {
+        // Size based on count (aggregated fires)
+        const baseRadius = Math.min(3 + Math.log10(fire.count + 1) * 3, 12);
+        const color = fire.brightness >= 400 ? '#ff4500' : '#ffa500';
+
+        const marker = L.circleMarker([fire.lat, fire.lon], {
+            radius: baseRadius,
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.7,
+            weight: 1
+        });
+
+        marker.bindPopup(createFirePopup(fire));
+        marker.addTo(fireLayer);
+    });
+
+    document.getElementById('visible-fires-count').textContent =
+        filteredFires.length.toLocaleString('de-DE');
+
+    return filteredFires.length;
+}
+
+function renderQuakeEvents(filters) {
+    quakeLayer.clearLayers();
+
+    if (!filters.showQuakes || !eventsData?.earthquakes) {
+        document.getElementById('visible-quakes-count').textContent = '0';
+        return 0;
+    }
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - filters.days);
+
+    const filteredQuakes = eventsData.earthquakes.filter(quake => {
+        const quakeDate = new Date(quake.date);
+        if (quakeDate < cutoffDate) return false;
+        if (quake.magnitude < filters.quakeMagnitudeMin) return false;
+        if (quake.depth > filters.quakeDepthMax) return false;
+        return true;
+    });
+
+    filteredQuakes.forEach(quake => {
+        // Size based on magnitude
+        const radius = Math.min(4 + quake.magnitude * 1.5, 18);
+        const color = quake.magnitude >= 6 ? '#8b0000' :
+            quake.magnitude >= 4 ? '#8b5cf6' : '#a78bfa';
+
+        const marker = L.circleMarker([quake.lat, quake.lon], {
+            radius: radius,
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.6,
+            weight: 2
+        });
+
+        marker.bindPopup(createQuakePopup(quake));
+        marker.addTo(quakeLayer);
+    });
+
+    document.getElementById('visible-quakes-count').textContent =
+        filteredQuakes.length.toLocaleString('de-DE');
+
+    return filteredQuakes.length;
+}
+
+function createFirePopup(fire) {
+    const date = new Date(fire.date).toLocaleDateString('de-DE', {
+        day: '2-digit', month: '2-digit', year: 'numeric'
+    });
+    const firstDate = fire.date_first ? new Date(fire.date_first).toLocaleDateString('de-DE', {
+        day: '2-digit', month: '2-digit', year: 'numeric'
+    }) : null;
+
+    return `
+        <div class="event-popup fire-popup">
+            <div class="popup-header">🔥 Feuer-Detektion</div>
+            <div class="popup-content">
+                <div><strong>Letztes Datum:</strong> ${date}</div>
+                ${firstDate && firstDate !== date ? `<div><strong>Erstes Datum:</strong> ${firstDate}</div>` : ''}
+                <div><strong>Max. Brightness:</strong> ${fire.brightness.toFixed(1)}K</div>
+                <div><strong>Avg. Brightness:</strong> ${fire.brightness_avg?.toFixed(1) || 'N/A'}K</div>
+                <div><strong>Detektionen:</strong> ${fire.count}</div>
+                ${fire.frp ? `<div><strong>Max. FRP:</strong> ${fire.frp.toFixed(1)} MW</div>` : ''}
+                <div><strong>Konfidenz:</strong> ${fire.confidence || 'N/A'}</div>
+            </div>
+        </div>
+    `;
+}
+
+function createQuakePopup(quake) {
+    const date = new Date(quake.date).toLocaleDateString('de-DE', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+    return `
+        <div class="event-popup quake-popup">
+            <div class="popup-header">🌍 Erdbeben M${quake.magnitude.toFixed(1)}</div>
+            <div class="popup-content">
+                <div><strong>Datum:</strong> ${date}</div>
+                <div><strong>Magnitude:</strong> ${quake.magnitude.toFixed(1)}</div>
+                <div><strong>Tiefe:</strong> ${quake.depth.toFixed(1)} km</div>
+                <div><strong>Ort:</strong> ${quake.place}</div>
+            </div>
+        </div>
+    `;
 }
 
 // ============================================

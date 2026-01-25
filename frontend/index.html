@@ -28,15 +28,28 @@
                 <span class="logo-icon" aria-hidden="true"><i class="fas fa-tower-observation"></i></span>
                 <h1>RiskRadar <span class="header-subtitle">Control Tower</span></h1>
             </div>
+            <!-- Tab Navigation -->
+            <nav class="view-tabs" role="tablist">
+                <button class="view-tab active" data-view="forecast" role="tab" aria-selected="true">
+                    <i class="fas fa-chart-line"></i> Forecast
+                </button>
+                <button class="view-tab" data-view="history" role="tab" aria-selected="false">
+                    <i class="fas fa-history"></i> History
+                </button>
+            </nav>
         </div>
         <div class="header-center">
-            <div class="status-indicator active">
+            <div class="status-indicator active" id="forecast-status">
                 <span class="pulse"></span>
                 <span>LIVE</span>
             </div>
-            <div class="forecast-window">
+            <div class="forecast-window" id="forecast-window">
                 <i class="fas fa-clock"></i>
                 <span>72h Forecast</span>
+            </div>
+            <div class="history-info" id="history-info" style="display: none;">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Letzte 90 Tage</span>
             </div>
         </div>
         <div class="header-right">
@@ -48,66 +61,169 @@
 
     <!-- Main Content -->
     <main class="main-content">
-        <!-- Left Panel: All Sites -->
-        <aside class="panel-left">
-            <div class="panel sites-list-panel">
-                <div class="panel-header">
-                    <h2><i class="fas fa-list"></i> Standorte</h2>
-                    <div class="panel-badges">
-                        <span class="badge badge-neutral" id="site-count">- Standorte</span>
-                        <span class="badge badge-danger" id="critical-count">0 kritisch</span>
+        <!-- ========== FORECAST VIEW ========== -->
+        <div class="view-container" id="forecast-view">
+            <!-- Left Panel: All Sites -->
+            <aside class="panel-left">
+                <div class="panel sites-list-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-list"></i> Standorte</h2>
+                        <div class="panel-badges">
+                            <span class="badge badge-neutral" id="site-count">- Standorte</span>
+                            <span class="badge badge-danger" id="critical-count">0 kritisch</span>
+                        </div>
+                    </div>
+                    <div class="filter-controls">
+                        <!-- Sorting Dropdown -->
+                        <div class="sort-control">
+                            <label for="sort-select" class="sort-label">
+                                <i class="fas fa-sort"></i> Sortierung
+                            </label>
+                            <select id="sort-select" class="sort-select">
+                                <option value="name-asc">Name (A-Z)</option>
+                                <option value="name-desc">Name (Z-A)</option>
+                                <option value="risk-desc" selected>Risiko (höchstes zuerst)</option>
+                                <option value="risk-asc">Risiko (niedrigstes zuerst)</option>
+                            </select>
+                        </div>
+                        <!-- Type Filter Buttons -->
+                        <div class="filter-buttons" role="group" aria-label="Standorttyp">
+                            <button type="button" class="filter-btn active" data-filter="all">Alle</button>
+                            <button type="button" class="filter-btn" data-filter="hub">Hubs</button>
+                            <button type="button" class="filter-btn" data-filter="depot">Depots</button>
+                            <button type="button" class="filter-btn"
+                                data-filter="sortierzentrum">Sortierzentren</button>
+                        </div>
+                    </div>
+                    <div class="site-list" id="site-list">
+                        <!-- Populated by JavaScript -->
                     </div>
                 </div>
-                <div class="filter-controls">
-                    <!-- Sorting Dropdown -->
-                    <div class="sort-control">
-                        <label for="sort-select" class="sort-label">
-                            <i class="fas fa-sort"></i> Sortierung
-                        </label>
-                        <select id="sort-select" class="sort-select">
-                            <option value="name-asc">Name (A-Z)</option>
-                            <option value="name-desc">Name (Z-A)</option>
-                            <option value="risk-desc" selected>Risiko (höchstes zuerst)</option>
-                            <option value="risk-asc">Risiko (niedrigstes zuerst)</option>
-                        </select>
+            </aside>
+
+            <!-- Center: Map -->
+            <div class="map-container">
+                <div id="map"></div>
+                <div class="map-overlay">
+                    <div class="legend">
+                        <div class="legend-title">Risiko-Level</div>
+                        <div class="legend-item"><span class="legend-marker critical"></span> Kritisch (≥75%)</div>
+                        <div class="legend-item"><span class="legend-marker high"></span> Hoch (50-75%)</div>
+                        <div class="legend-item"><span class="legend-marker medium"></span> Mittel (25-50%)</div>
+                        <div class="legend-item"><span class="legend-marker low"></span> Niedrig (&lt;25%)</div>
                     </div>
-                    <!-- Type Filter Buttons -->
-                    <div class="filter-buttons" role="group" aria-label="Standorttyp">
-                        <button type="button" class="filter-btn active" data-filter="all">Alle</button>
-                        <button type="button" class="filter-btn" data-filter="hub">Hubs</button>
-                        <button type="button" class="filter-btn" data-filter="depot">Depots</button>
-                        <button type="button" class="filter-btn" data-filter="sortierzentrum">Sortierzentren</button>
-                    </div>
-                </div>
-                <div class="site-list" id="site-list">
-                    <!-- Populated by JavaScript -->
                 </div>
             </div>
 
-        </aside>
+            <!-- Right Panel: Site Details -->
+            <aside class="panel-right" style="display: none;">
+                <div class="panel site-detail-panel" id="site-detail-panel">
+                    <div class="site-detail-content" id="site-detail-content">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </aside>
+        </div>
 
-        <!-- Center: Map -->
-        <div class="map-container">
-            <div id="map"></div>
-            <div class="map-overlay">
-                <div class="legend">
-                    <div class="legend-title">Risiko-Level</div>
-                    <div class="legend-item"><span class="legend-marker critical"></span> Kritisch (≥75%)</div>
-                    <div class="legend-item"><span class="legend-marker high"></span> Hoch (50-75%)</div>
-                    <div class="legend-item"><span class="legend-marker medium"></span> Mittel (25-50%)</div>
-                    <div class="legend-item"><span class="legend-marker low"></span> Niedrig (&lt;25%)</div>
+        <!-- ========== HISTORY VIEW ========== -->
+        <div class="view-container" id="history-view" style="display: none;">
+            <!-- Filter Sidebar -->
+            <aside class="panel-left history-filters">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-filter"></i> Filter</h2>
+                    </div>
+
+                    <!-- Time Range Filter -->
+                    <div class="filter-section">
+                        <label class="filter-section-label"><i class="fas fa-calendar"></i> Zeitraum</label>
+                        <select id="history-time-range" class="history-select">
+                            <option value="7">Letzte 7 Tage</option>
+                            <option value="30">Letzte 30 Tage</option>
+                            <option value="60">Letzte 60 Tage</option>
+                            <option value="90" selected>Letzte 90 Tage</option>
+                        </select>
+                    </div>
+
+                    <!-- Fire Filters -->
+                    <div class="filter-section">
+                        <label class="filter-section-label">
+                            <input type="checkbox" id="show-fires" checked>
+                            <span class="fire-icon">🔥</span> Feuer anzeigen
+                        </label>
+                        <div class="filter-subsection" id="fire-filters">
+                            <div class="filter-row">
+                                <label for="fire-brightness-min">Min. Brightness</label>
+                                <input type="range" id="fire-brightness-min" min="300" max="500" value="300" step="10">
+                                <span id="fire-brightness-value" class="filter-value">300K</span>
+                            </div>
+                            <div class="filter-row">
+                                <label for="fire-count-min">Min. Detektionen</label>
+                                <input type="range" id="fire-count-min" min="1" max="50" value="1" step="1">
+                                <span id="fire-count-value" class="filter-value">1</span>
+                            </div>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" id="fire-high-confidence">
+                                Nur High Confidence
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Earthquake Filters -->
+                    <div class="filter-section">
+                        <label class="filter-section-label">
+                            <input type="checkbox" id="show-quakes" checked>
+                            <span class="quake-icon">🌍</span> Erdbeben anzeigen
+                        </label>
+                        <div class="filter-subsection" id="quake-filters">
+                            <div class="filter-row">
+                                <label for="quake-magnitude-min">Min. Magnitude</label>
+                                <input type="range" id="quake-magnitude-min" min="2.5" max="7" step="0.5" value="4">
+                                <span id="quake-magnitude-value" class="filter-value">4.0</span>
+                            </div>
+                            <div class="filter-row">
+                                <label for="quake-depth-max">Max. Tiefe</label>
+                                <input type="range" id="quake-depth-max" min="10" max="300" step="10" value="300">
+                                <span id="quake-depth-value" class="filter-value">300km</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="filter-section filter-stats">
+                        <label class="filter-section-label"><i class="fas fa-chart-bar"></i> Statistik</label>
+                        <div class="stat-row">
+                            <span class="stat-label">🔥 Feuer sichtbar:</span>
+                            <span class="stat-value" id="visible-fires-count">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">🌍 Erdbeben sichtbar:</span>
+                            <span class="stat-value" id="visible-quakes-count">0</span>
+                        </div>
+                        <div class="stat-row total">
+                            <span class="stat-label">Gesamt:</span>
+                            <span class="stat-value" id="visible-total-count">0</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- History Map -->
+            <div class="map-container">
+                <div id="history-map"></div>
+                <div class="map-overlay">
+                    <div class="legend">
+                        <div class="legend-title">Ereignisse (90 Tage)</div>
+                        <div class="legend-item"><span class="legend-marker fire-high"></span> Feuer (≥400K)</div>
+                        <div class="legend-item"><span class="legend-marker fire-low"></span> Feuer (&lt;400K)</div>
+                        <div class="legend-item"><span class="legend-marker quake-major"></span> Erdbeben ≥6.0</div>
+                        <div class="legend-item"><span class="legend-marker quake-moderate"></span> Erdbeben 4.0-6.0
+                        </div>
+                        <div class="legend-item"><span class="legend-marker quake-minor"></span> Erdbeben &lt;4.0</div>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <!-- Right Panel: Site Details -->
-        <aside class="panel-right" style="display: none;">
-            <div class="panel site-detail-panel" id="site-detail-panel">
-                <div class="site-detail-content" id="site-detail-content">
-                    <!-- Populated by JavaScript -->
-                </div>
-            </div>
-        </aside>
     </main>
 
     <!-- Leaflet JS -->

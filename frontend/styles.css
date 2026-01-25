@@ -990,3 +990,310 @@ body {
         order: -1;
     }
 }
+
+/* ========================================
+   View Tabs
+   ======================================== */
+.view-tabs {
+    display: flex;
+    gap: 4px;
+    margin-left: 24px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 4px;
+    border-radius: 8px;
+}
+
+.view-tab {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+}
+
+.view-tab:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.view-tab.active {
+    background: var(--accent-combined);
+    color: white;
+}
+
+.view-tab i {
+    font-size: 0.8rem;
+}
+
+/* ========================================
+   View Containers
+   ======================================== */
+.view-container {
+    display: flex;
+    flex: 1;
+    gap: var(--gap);
+    width: 100%;
+}
+
+/* History Info Badge */
+.history-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--accent-quake);
+}
+
+.history-info i {
+    color: var(--accent-quake);
+}
+
+/* ========================================
+   History Filters Sidebar
+   ======================================== */
+.history-filters .panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.filter-section:last-child {
+    border-bottom: none;
+}
+
+.filter-section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+    cursor: pointer;
+}
+
+.filter-section-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.filter-section-label i {
+    color: var(--text-secondary);
+    width: 16px;
+}
+
+.fire-icon,
+.quake-icon {
+    font-size: 1rem;
+}
+
+.filter-subsection {
+    margin-left: 24px;
+    margin-top: 8px;
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.filter-row label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    grid-column: 1 / -1;
+}
+
+.filter-row input[type="range"] {
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--bg-secondary);
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    grid-column: 1;
+}
+
+.filter-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent-combined);
+    cursor: pointer;
+}
+
+.filter-value {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    min-width: 50px;
+    text-align: right;
+}
+
+.filter-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    margin-top: 8px;
+}
+
+.filter-checkbox input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+}
+
+/* History Select Dropdown */
+.history-select {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-family: inherit;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+
+.history-select:hover {
+    border-color: var(--accent-combined);
+}
+
+.history-select:focus {
+    outline: none;
+    border-color: var(--accent-combined);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* ========================================
+   Filter Statistics
+   ======================================== */
+.filter-stats {
+    background: rgba(0, 0, 0, 0.2);
+    margin: 16px;
+    border-radius: var(--radius-sm);
+    border: none !important;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+}
+
+.stat-row:not(:last-child) {
+    border-bottom: 1px solid var(--border-light);
+}
+
+.stat-row.total {
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.stat-value {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* ========================================
+   Event Legend Markers
+   ======================================== */
+.legend-marker.fire-high {
+    background: #ff4500;
+    box-shadow: 0 0 6px rgba(255, 69, 0, 0.5);
+}
+
+.legend-marker.fire-low {
+    background: #ffa500;
+}
+
+.legend-marker.quake-major {
+    background: #8b0000;
+    box-shadow: 0 0 6px rgba(139, 0, 0, 0.5);
+}
+
+.legend-marker.quake-moderate {
+    background: #8b5cf6;
+}
+
+.legend-marker.quake-minor {
+    background: #a78bfa;
+}
+
+/* ========================================
+   History Map
+   ======================================== */
+#history-map {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-secondary);
+}
+
+/* Event Popup Styles */
+.event-popup {
+    font-family: 'Inter', sans-serif;
+    min-width: 180px;
+}
+
+.event-popup .popup-header {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.event-popup.fire-popup .popup-header {
+    color: #ff4500;
+}
+
+.event-popup.quake-popup .popup-header {
+    color: #8b5cf6;
+}
+
+.event-popup .popup-content div {
+    padding: 3px 0;
+    font-size: 0.8rem;
+    color: #374151;
+}
+
+.event-popup .popup-content strong {
+    color: #111827;
+}
