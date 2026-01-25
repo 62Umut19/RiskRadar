@@ -410,6 +410,7 @@ Interaktive Folium-Karte mit:
 ### 3. JSON-Daten für Frontend (`frontend/data/`)
 - `forecast_data.json`: Alle Site-Vorhersagen mit Risk Scores
 - `forecast_metadata.json`: Statistiken, Version und Generierungszeitpunkt
+- `events_data.json`: Aggregierte History-Events (Feuer/Erdbeben) der letzten Tage
 
 ### 4. Trainierte Modelle
 - `fire_model_v4.pkl`: Random Forest für Feuer-Vorhersage
@@ -426,20 +427,33 @@ Das Projekt enthält ein standalone Web-Dashboard zur Visualisierung der Vorhers
 # 1. Erst Vorhersage ausführen (generiert JSON-Daten)
 python app/run_real_forecast.py
 
-# 2. Lokalen Webserver starten
+# 2. History-Daten exportieren (für History-View)
+python app/export_events.py
+
+# 3. Lokalen Webserver starten
 cd frontend
 python -m http.server 8000
 
-# 3. Browser öffnen
+# 4. Browser öffnen
 open http://localhost:8000
 ```
 
 ### Features
-- **Interaktive Leaflet-Karte** mit allen Standorten
-- **Risiko-Visualisierung**: Farbkodierte Marker (Rot/Orange/Gelb/Grün)
-- **Sidebar**: Sortierte Site-Liste nach Combined Risk
-- **Statistiken**: Durchschnittliche Fire/Quake/Combined Risk Scores
+- **Forecast-Tab**: Interaktive Leaflet-Karte mit Standort-Markern, Risiko-Details und Site-Liste
+- **History-Tab**: Vergangene Feuer/Erdbeben mit Filtern (Zeitraum, Brightness, Detektionen, Magnitude, Tiefe)
+- **Live-Statistiken**: Sichtbare Events werden in der Sidebar aktualisiert
+- **Einheitliche Popups**: Konsistentes Layout für Standorte und Events
 - **Responsive Design**: Funktioniert auf Desktop und Mobile
+
+### History View Daten exportieren
+
+```bash
+# Exportiert aggregierte Feuer-Events (0.1° Grid) und USGS-Erdbeben
+python app/export_events.py
+```
+
+Output: `frontend/data/events_data.json`  
+Konfiguration: `Config.EVENT_HISTORY_DAYS`, `Config.MIN_EARTHQUAKE_MAGNITUDE_EXPORT`
 
 ## 🔍 Logging
 
@@ -463,6 +477,14 @@ Das System loggt alle wichtigen Schritte:
 cd app
 python sensor_features.py  # Test Feature Engineering
 python sensor_labels.py    # Test Label Generation
+```
+
+### Frontend Tests
+
+```bash
+cd frontend
+npm run test:unit   # Jest
+npm run test:e2e    # Playwright
 ```
 
 ### Code-Qualität
@@ -602,5 +624,4 @@ Dieses Projekt wurde für akademische Zwecke entwickelt (FOM - Business Analytic
 - NASA FIRMS (Public Domain)
 - USGS Earthquake Catalog (Public Domain)
 - OpenMeteo (Free for non-commercial use)
-
 
