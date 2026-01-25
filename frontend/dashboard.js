@@ -932,17 +932,60 @@ function createFirePopup(fire) {
         day: '2-digit', month: '2-digit', year: 'numeric'
     }) : null;
 
+    const brightnessLevel = fire.brightness >= 450 ? 'Extrem' : fire.brightness >= 400 ? 'Hoch' : 'Moderat';
+    const brightnessColor = fire.brightness >= 450 ? '#ef4444' : fire.brightness >= 400 ? '#f97316' : '#eab308';
+
     return `
-        <div class="event-popup fire-popup">
-            <div class="popup-header">🔥 Feuer-Detektion</div>
-            <div class="popup-content">
-                <div><strong>Letztes Datum:</strong> ${date}</div>
-                ${firstDate && firstDate !== date ? `<div><strong>Erstes Datum:</strong> ${firstDate}</div>` : ''}
-                <div><strong>Max. Brightness:</strong> ${fire.brightness.toFixed(1)}K</div>
-                <div><strong>Avg. Brightness:</strong> ${fire.brightness_avg?.toFixed(1) || 'N/A'}K</div>
-                <div><strong>Detektionen:</strong> ${fire.count}</div>
-                ${fire.frp ? `<div><strong>Max. FRP:</strong> ${fire.frp.toFixed(1)} MW</div>` : ''}
-                <div><strong>Konfidenz:</strong> ${fire.confidence || 'N/A'}</div>
+        <div style="font-family: 'Inter', sans-serif; min-width: 260px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <strong style="font-size: 1.1rem;">🔥 Feuer-Detektion</strong>
+                <span style="background: rgba(249,115,22,0.2); 
+                       color: #f97316; 
+                       padding: 3px 10px; 
+                       border-radius: 12px; 
+                       font-size: 0.7rem;
+                       text-transform: uppercase;">
+                    ${fire.count} Detektionen
+                </span>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                <div style="background: rgba(249,115,22,0.1); padding: 8px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 0.65rem; color: #9ca3af; text-transform: uppercase;">Max. Brightness</div>
+                    <div style="font-size: 1.2rem; font-weight: 700; color: ${brightnessColor};">${fire.brightness.toFixed(0)}K</div>
+                </div>
+                <div style="background: rgba(234,179,8,0.1); padding: 8px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 0.65rem; color: #9ca3af; text-transform: uppercase;">Ø Brightness</div>
+                    <div style="font-size: 1.2rem; font-weight: 700; color: #eab308;">${fire.brightness_avg?.toFixed(0) || 'N/A'}K</div>
+                </div>
+            </div>
+            
+            <div style="background: rgba(249,115,22,0.1); padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 10px;">
+                <div style="font-size: 0.65rem; color: #9ca3af; text-transform: uppercase;">Intensität</div>
+                <div style="font-size: 1.3rem; font-weight: 700; color: ${brightnessColor};">${brightnessLevel}</div>
+            </div>
+            
+            <div style="font-size: 0.8rem; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 10px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>📅 Letztes Datum:</span>
+                    <strong style="color: #374151;">${date}</strong>
+                </div>
+                ${firstDate && firstDate !== date ? `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>📅 Erstes Datum:</span>
+                    <strong style="color: #374151;">${firstDate}</strong>
+                </div>
+                ` : ''}
+                ${fire.frp ? `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>⚡ Max. FRP:</span>
+                    <strong style="color: #374151;">${fire.frp.toFixed(1)} MW</strong>
+                </div>
+                ` : ''}
+                <div style="display: flex; justify-content: space-between;">
+                    <span>✓ Konfidenz:</span>
+                    <strong style="color: ${fire.confidence === 'high' ? '#22c55e' : '#9ca3af'};">${fire.confidence === 'high' ? 'Hoch' : fire.confidence === 'nominal' ? 'Normal' : 'Niedrig'}</strong>
+                </div>
             </div>
         </div>
     `;
@@ -953,14 +996,45 @@ function createQuakePopup(quake) {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
+    const magLevel = quake.magnitude >= 6 ? 'Stark' : quake.magnitude >= 5 ? 'Moderat' : 'Leicht';
+    const magColor = quake.magnitude >= 6 ? '#ef4444' : quake.magnitude >= 5 ? '#8b5cf6' : '#a78bfa';
+    const depthLevel = quake.depth <= 70 ? 'Flach' : quake.depth <= 300 ? 'Mittel' : 'Tief';
+
     return `
-        <div class="event-popup quake-popup">
-            <div class="popup-header">🌍 Erdbeben M${quake.magnitude.toFixed(1)}</div>
-            <div class="popup-content">
-                <div><strong>Datum:</strong> ${date}</div>
-                <div><strong>Magnitude:</strong> ${quake.magnitude.toFixed(1)}</div>
-                <div><strong>Tiefe:</strong> ${quake.depth.toFixed(1)} km</div>
-                <div><strong>Ort:</strong> ${quake.place}</div>
+        <div style="font-family: 'Inter', sans-serif; min-width: 260px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <strong style="font-size: 1.1rem;">🌍 Erdbeben</strong>
+                <span style="background: rgba(139,92,246,0.2); 
+                       color: #8b5cf6; 
+                       padding: 3px 10px; 
+                       border-radius: 12px; 
+                       font-size: 0.7rem;
+                       text-transform: uppercase;">
+                    ${magLevel}
+                </span>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                <div style="background: rgba(139,92,246,0.1); padding: 8px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 0.65rem; color: #9ca3af; text-transform: uppercase;">Magnitude</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: ${magColor};">M${quake.magnitude.toFixed(1)}</div>
+                </div>
+                <div style="background: rgba(59,130,246,0.1); padding: 8px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 0.65rem; color: #9ca3af; text-transform: uppercase;">Tiefe</div>
+                    <div style="font-size: 1.2rem; font-weight: 700; color: #3b82f6;">${quake.depth.toFixed(0)} km</div>
+                    <div style="font-size: 0.6rem; color: #9ca3af;">${depthLevel}</div>
+                </div>
+            </div>
+            
+            <div style="font-size: 0.8rem; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 10px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>📅 Datum:</span>
+                    <strong style="color: #374151;">${date}</strong>
+                </div>
+                <div style="margin-top: 6px;">
+                    <span>📍 </span>
+                    <strong style="color: #374151;">${quake.place}</strong>
+                </div>
             </div>
         </div>
     `;
