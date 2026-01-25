@@ -27,6 +27,7 @@ let siteMetadata = null;
 let playbooksData = null;
 let selectedSite = null;
 let currentFilter = 'all';
+let currentSort = 'risk-desc';
 
 // ============================================
 // Initialization
@@ -38,7 +39,6 @@ async function init() {
         window.addEventListener('resize', invalidateMapSize);
         renderMarkers();
         updateMetadataUI();
-        updateStatsUI();
         renderSiteList();
         initFilterButtons();
     } catch (error) {
@@ -287,40 +287,61 @@ function createPopupHTML(site) {
 // ============================================
 // Site List
 // ============================================
+const SITE_FILTERS = {
+    hub: site => site.type === 'hub',
+    depot: site => site.type === 'depot',
+    sortierzentrum: site => site.type === 'sortierzentrum'
+};
+
+const SITE_SORTS = {
+    'name-asc': (a, b) => a.name.localeCompare(b.name, 'de'),
+    'name-desc': (a, b) => b.name.localeCompare(a.name, 'de'),
+    'risk-asc': (a, b) => a.risks.combined.score - b.risks.combined.score,
+    'risk-desc': (a, b) => b.risks.combined.score - a.risks.combined.score
+};
+
+function getSiteListItemMarkup(site) {
+    const score = site.risks.combined.score;
+    const level = getRiskLevel(score);
+    const isSelected = selectedSite && selectedSite.name === site.name;
+
+    return `
+        <button type="button" class="site-item level-${level} ${isSelected ? 'selected' : ''}" onclick="selectSiteByName('${site.name}')" ${isSelected ? 'aria-current="true"' : ''}>
+            <span class="site-marker" aria-hidden="true"></span>
+            <div class="site-info">
+                <span class="site-name">${site.name}</span>
+                <div class="site-meta">
+                    <span class="site-type">${site.type}</span>
+                    <span class="site-divider" aria-hidden="true">•</span>
+                    <span class="site-region">${site.region}</span>
+                </div>
+            </div>
+            <span class="site-risk">${score.toFixed(1)}%</span>
+        </button>
+    `;
+}
+
 function renderSiteList() {
     const container = document.getElementById('site-list');
+    if (!container || !forecastData) return;
 
     // Update critical count
     const criticalCount = forecastData.sites.filter(s => getRiskLevel(s.risks.combined.score) === 'critical').length;
     document.getElementById('critical-count').textContent = `${criticalCount} kritisch`;
 
-    let sites = [...forecastData.sites].sort(
-        (a, b) => b.risks.combined.score - a.risks.combined.score
-    );
+    let sites = [...forecastData.sites];
 
-    // Apply filter
-    if (currentFilter === 'critical') {
-        sites = sites.filter(s => getRiskLevel(s.risks.combined.score) === 'critical');
-    } else if (currentFilter === 'hub') {
-        sites = sites.filter(s => s.type === 'hub');
+    // Apply type filter
+    const filterFn = SITE_FILTERS[currentFilter];
+    if (filterFn) {
+        sites = sites.filter(filterFn);
     }
 
-    container.innerHTML = sites.map(site => {
-        const score = site.risks.combined.score;
-        const level = getRiskLevel(score);
-        const isSelected = selectedSite && selectedSite.name === site.name;
+    // Apply sorting
+    const sortFn = SITE_SORTS[currentSort] || SITE_SORTS['risk-desc'];
+    sites.sort(sortFn);
 
-        return `
-            <button type="button" class="site-item ${isSelected ? 'selected' : ''}" onclick="selectSiteByName('${site.name}')" ${isSelected ? 'aria-current="true"' : ''}>
-                <span class="site-marker ${level}"></span>
-                <div class="site-info">
-                    <span class="site-name">${site.name}</span>
-                    <span class="site-type">${site.type} • ${site.region}</span>
-                </div>
-                <span class="site-risk" style="color: ${getRiskColor(score)}">${score.toFixed(1)}%</span>
-            </button>
-        `;
-    }).join('');
+    container.innerHTML = sites.map(getSiteListItemMarkup).join('');
 }
 
 // ============================================
@@ -622,6 +643,15 @@ function initFilterButtons() {
             renderSiteList();
         });
     });
+
+    // Initialize sort dropdown
+    const sortSelect = document.getElementById('sort-select');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', (e) => {
+            currentSort = e.target.value;
+            renderSiteList();
+        });
+    }
 }
 
 // ============================================
@@ -631,20 +661,9 @@ function updateMetadataUI() {
     const date = new Date(forecastData.generated_at);
     document.getElementById('generated-at').textContent =
         `Generiert: ${date.toLocaleDateString('de-DE')} ${date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
-    document.getElementById('site-count').textContent =
-        `| ${forecastData.sites.length} Standorte`;
-}
-
-function updateStatsUI() {
-    if (metadata && metadata.statistics) {
-        document.getElementById('avg-fire').textContent =
-            `${metadata.statistics.avg_fire_risk.toFixed(1)}%`;
-        document.getElementById('avg-quake').textContent =
-            `${metadata.statistics.avg_quake_risk.toFixed(1)}%`;
-        document.getElementById('avg-combined').textContent =
-            `${metadata.statistics.avg_combined_risk.toFixed(1)}%`;
-        document.getElementById('total-sites').textContent =
-            metadata.statistics.total_sites;
+    const siteCount = document.getElementById('site-count');
+    if (siteCount) {
+        siteCount.textContent = `${forecastData.sites.length} Standorte`;
     }
 }
 

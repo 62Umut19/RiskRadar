@@ -25,7 +25,7 @@
     <header class="header">
         <div class="header-left">
             <div class="logo">
-                <span class="logo-icon">🛡️</span>
+                <span class="logo-icon" aria-hidden="true"><i class="fas fa-tower-observation"></i></span>
                 <h1>RiskRadar <span class="header-subtitle">Control Tower</span></h1>
             </div>
         </div>
@@ -42,7 +42,6 @@
         <div class="header-right">
             <div class="metadata" id="metadata">
                 <span id="generated-at">Lade...</span>
-                <span id="site-count"></span>
             </div>
         </div>
     </header>
@@ -54,53 +53,37 @@
             <div class="panel sites-list-panel">
                 <div class="panel-header">
                     <h2><i class="fas fa-list"></i> Standorte</h2>
-                    <span class="badge badge-danger" id="critical-count">0 kritisch</span>
+                    <div class="panel-badges">
+                        <span class="badge badge-neutral" id="site-count">- Standorte</span>
+                        <span class="badge badge-danger" id="critical-count">0 kritisch</span>
+                    </div>
                 </div>
-                <div class="filter-buttons" style="padding: 0 12px 8px;">
-                    <button type="button" class="filter-btn active" data-filter="all">Alle</button>
-                    <button type="button" class="filter-btn" data-filter="critical">Kritisch</button>
-                    <button type="button" class="filter-btn" data-filter="hub">Hubs</button>
+                <div class="filter-controls">
+                    <!-- Sorting Dropdown -->
+                    <div class="sort-control">
+                        <label for="sort-select" class="sort-label">
+                            <i class="fas fa-sort"></i> Sortierung
+                        </label>
+                        <select id="sort-select" class="sort-select">
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="risk-desc" selected>Risiko (höchstes zuerst)</option>
+                            <option value="risk-asc">Risiko (niedrigstes zuerst)</option>
+                        </select>
+                    </div>
+                    <!-- Type Filter Buttons -->
+                    <div class="filter-buttons" role="group" aria-label="Standorttyp">
+                        <button type="button" class="filter-btn active" data-filter="all">Alle</button>
+                        <button type="button" class="filter-btn" data-filter="hub">Hubs</button>
+                        <button type="button" class="filter-btn" data-filter="depot">Depots</button>
+                        <button type="button" class="filter-btn" data-filter="sortierzentrum">Sortierzentren</button>
+                    </div>
                 </div>
                 <div class="site-list" id="site-list">
                     <!-- Populated by JavaScript -->
                 </div>
             </div>
 
-            <div class="panel stats-panel">
-                <div class="panel-header">
-                    <h2><i class="fas fa-chart-bar"></i> Übersicht</h2>
-                </div>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon fire"><i class="fas fa-fire"></i></div>
-                        <div class="stat-content">
-                            <span class="stat-label">Ø Feuer-Risiko</span>
-                            <span class="stat-value" id="avg-fire">-</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon quake"><i class="fas fa-mountain"></i></div>
-                        <div class="stat-content">
-                            <span class="stat-label">Ø Erdbeben-Risiko</span>
-                            <span class="stat-value" id="avg-quake">-</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon combined"><i class="fas fa-shield-alt"></i></div>
-                        <div class="stat-content">
-                            <span class="stat-label">Ø Gesamt-Risiko</span>
-                            <span class="stat-value" id="avg-combined">-</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon sites"><i class="fas fa-warehouse"></i></div>
-                        <div class="stat-content">
-                            <span class="stat-label">Standorte</span>
-                            <span class="stat-value" id="total-sites">-</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </aside>
 
         <!-- Center: Map -->
