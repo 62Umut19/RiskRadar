@@ -50,12 +50,12 @@ test.describe('History View', () => {
 
             // Initially Forecast indicators visible
             await expect(page.locator('#forecast-status')).toBeVisible();
-            await expect(page.locator('#history-info')).toBeHidden();
+            await expect(page.locator('#forecast-window')).toBeVisible();
 
-            // After switching to History
+            // After switching to History - forecast indicators hidden
             await historyTab.click();
-            await expect(page.locator('#history-info')).toBeVisible();
             await expect(page.locator('#forecast-status')).toBeHidden();
+            await expect(page.locator('#forecast-window')).toBeHidden();
         });
     });
 
@@ -70,7 +70,7 @@ test.describe('History View', () => {
             await expect(historyMap).toBeVisible();
 
             // Check for Leaflet elements
-            await expect(page.locator('#history-map .leaflet-container')).toBeVisible();
+            await expect(page.locator('#history-map.leaflet-container')).toBeVisible();
         });
 
         test('should display filter sidebar', async ({ page }) => {
@@ -112,7 +112,6 @@ test.describe('History View', () => {
             await expect(page.locator('#show-fires')).toBeChecked();
             await expect(page.locator('#fire-brightness-min')).toBeVisible();
             await expect(page.locator('#fire-count-min')).toBeVisible();
-            await expect(page.locator('#fire-high-confidence')).toBeVisible();
         });
 
         test('should have earthquake filter controls', async ({ page }) => {

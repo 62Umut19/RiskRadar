@@ -70,29 +70,38 @@ test.describe('Filter Buttons', () => {
         await page.goto('/');
 
         await expect(page.locator('.filter-btn[data-filter="all"]')).toBeVisible();
-        await expect(page.locator('.filter-btn[data-filter="critical"]')).toBeVisible();
         await expect(page.locator('.filter-btn[data-filter="hub"]')).toBeVisible();
+        await expect(page.locator('.filter-btn[data-filter="depot"]')).toBeVisible();
+        await expect(page.locator('.filter-btn[data-filter="sortierzentrum"]')).toBeVisible();
     });
 
-    test('should filter to critical sites when clicking Critical button', async ({ page }) => {
+    test('should filter to depot sites when clicking Depots button', async ({ page }) => {
         await page.goto('/');
 
         await page.waitForSelector('.site-item', { timeout: 10000 });
 
         const initialCount = await page.locator('.site-item').count();
 
-        // Click critical filter
-        await page.locator('.filter-btn[data-filter="critical"]').click();
+        // Click depot filter
+        await page.locator('.filter-btn[data-filter="depot"]').click();
 
         // Wait for re-render
         await page.waitForTimeout(300);
 
-        // Should have fewer or equal sites (only critical ones)
+        // Should have fewer or equal sites (only depots)
         const filteredCount = await page.locator('.site-item').count();
         expect(filteredCount).toBeLessThanOrEqual(initialCount);
 
         // Button should be active
-        await expect(page.locator('.filter-btn[data-filter="critical"]')).toHaveClass(/active/);
+        await expect(page.locator('.filter-btn[data-filter="depot"]')).toHaveClass(/active/);
+
+        // All visible sites should be depots
+        const siteTypes = page.locator('.site-item .site-type');
+        const count = await siteTypes.count();
+        for (let i = 0; i < count; i++) {
+            const typeText = await siteTypes.nth(i).textContent();
+            expect(typeText?.toLowerCase()).toContain('depot');
+        }
     });
 
     test('should filter to hub sites when clicking Hubs button', async ({ page }) => {
@@ -184,8 +193,9 @@ test.describe('Map', () => {
     test('should show legend overlay', async ({ page }) => {
         await page.goto('/');
 
-        await expect(page.locator('.legend')).toBeVisible();
-        await expect(page.locator('.legend-title')).toContainText('Risiko-Level');
+        const forecastLegend = page.locator('#forecast-view .legend');
+        await expect(forecastLegend).toBeVisible();
+        await expect(forecastLegend.locator('.legend-title')).toContainText('Risiko-Level');
     });
 
     test('should have map fully loaded with tiles', async ({ page }) => {
@@ -198,28 +208,6 @@ test.describe('Map', () => {
         const tiles = page.locator('.leaflet-tile-loaded');
         const tileCount = await tiles.count();
         expect(tileCount).toBeGreaterThan(0);
-    });
-});
-
-test.describe('Statistics Panel', () => {
-    test('should display average risk statistics', async ({ page }) => {
-        await page.goto('/');
-
-        await page.waitForSelector('.site-item', { timeout: 10000 });
-
-        // Wait for stats to load
-        await expect(page.locator('#avg-fire')).not.toHaveText('-');
-        await expect(page.locator('#avg-quake')).not.toHaveText('-');
-        await expect(page.locator('#avg-combined')).not.toHaveText('-');
-        await expect(page.locator('#total-sites')).not.toHaveText('-');
-    });
-
-    test('should show stat cards with icons', async ({ page }) => {
-        await page.goto('/');
-
-        await expect(page.locator('.stat-card .fa-fire')).toBeVisible();
-        await expect(page.locator('.stat-card .fa-mountain')).toBeVisible();
-        await expect(page.locator('.stat-card .fa-shield-alt')).toBeVisible();
     });
 });
 

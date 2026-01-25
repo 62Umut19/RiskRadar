@@ -47,10 +47,6 @@
                 <i class="fas fa-clock"></i>
                 <span>72h Forecast</span>
             </div>
-            <div class="history-info" id="history-info" style="display: none;">
-                <i class="fas fa-calendar-alt"></i>
-                <span>Letzte 90 Tage</span>
-            </div>
         </div>
         <div class="header-right">
             <div class="metadata" id="metadata">
@@ -140,8 +136,8 @@
                         <select id="history-time-range" class="history-select">
                             <option value="7">Letzte 7 Tage</option>
                             <option value="30">Letzte 30 Tage</option>
-                            <option value="60">Letzte 60 Tage</option>
-                            <option value="90" selected>Letzte 90 Tage</option>
+                            <option value="60" selected>Letzte 60 Tage</option>
+                            <option value="90">Letzte 90 Tage</option>
                         </select>
                     </div>
 
@@ -154,18 +150,14 @@
                         <div class="filter-subsection" id="fire-filters">
                             <div class="filter-row">
                                 <label for="fire-brightness-min">Min. Brightness</label>
-                                <input type="range" id="fire-brightness-min" min="300" max="500" value="300" step="10">
-                                <span id="fire-brightness-value" class="filter-value">300K</span>
+                                <input type="range" id="fire-brightness-min" min="300" max="500" value="400" step="10">
+                                <span id="fire-brightness-value" class="filter-value">400K</span>
                             </div>
                             <div class="filter-row">
                                 <label for="fire-count-min">Min. Detektionen</label>
-                                <input type="range" id="fire-count-min" min="1" max="50" value="1" step="1">
-                                <span id="fire-count-value" class="filter-value">1</span>
+                                <input type="range" id="fire-count-min" min="1" max="50" value="26" step="1">
+                                <span id="fire-count-value" class="filter-value">26</span>
                             </div>
-                            <label class="filter-checkbox">
-                                <input type="checkbox" id="fire-high-confidence">
-                                Nur High Confidence
-                            </label>
                         </div>
                     </div>
 
@@ -178,13 +170,13 @@
                         <div class="filter-subsection" id="quake-filters">
                             <div class="filter-row">
                                 <label for="quake-magnitude-min">Min. Magnitude</label>
-                                <input type="range" id="quake-magnitude-min" min="2.5" max="7" step="0.5" value="4">
-                                <span id="quake-magnitude-value" class="filter-value">4.0</span>
+                                <input type="range" id="quake-magnitude-min" min="2.5" max="7" step="0.5" value="5">
+                                <span id="quake-magnitude-value" class="filter-value">5.0</span>
                             </div>
                             <div class="filter-row">
                                 <label for="quake-depth-max">Max. Tiefe</label>
-                                <input type="range" id="quake-depth-max" min="10" max="300" step="10" value="300">
-                                <span id="quake-depth-value" class="filter-value">300km</span>
+                                <input type="range" id="quake-depth-max" min="10" max="300" step="10" value="160">
+                                <span id="quake-depth-value" class="filter-value">160km</span>
                             </div>
                         </div>
                     </div>

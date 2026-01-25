@@ -29,7 +29,6 @@ describe('History View Filters', () => {
             if (fireDate < cutoffDate) return false;
             if (fire.brightness < filters.fireBrightnessMin) return false;
             if (fire.count < filters.fireCountMin) return false;
-            if (filters.fireHighConfidence && fire.confidence !== 'high') return false;
             return true;
         });
     }
@@ -50,44 +49,37 @@ describe('History View Filters', () => {
 
     describe('Fire Filters', () => {
         test('filters by time range - 30 days', () => {
-            const filters = { days: 30, fireBrightnessMin: 300, fireCountMin: 1, fireHighConfidence: false };
+            const filters = { days: 30, fireBrightnessMin: 300, fireCountMin: 1 };
             const result = filterFires(mockFires, filters);
             expect(result).toHaveLength(2); // Jan 20 and Jan 10
         });
 
         test('filters by time range - 90 days', () => {
-            const filters = { days: 90, fireBrightnessMin: 300, fireCountMin: 1, fireHighConfidence: false };
+            const filters = { days: 90, fireBrightnessMin: 300, fireCountMin: 1 };
             const result = filterFires(mockFires, filters);
             expect(result).toHaveLength(3); // Excludes Nov 1 (>90 days)
         });
 
         test('filters by minimum brightness', () => {
-            const filters = { days: 90, fireBrightnessMin: 400, fireCountMin: 1, fireHighConfidence: false };
+            const filters = { days: 90, fireBrightnessMin: 400, fireCountMin: 1 };
             const result = filterFires(mockFires, filters);
             expect(result).toHaveLength(2); // Only brightness >= 400
             expect(result.every(f => f.brightness >= 400)).toBe(true);
         });
 
         test('filters by minimum detection count', () => {
-            const filters = { days: 90, fireBrightnessMin: 300, fireCountMin: 10, fireHighConfidence: false };
+            const filters = { days: 90, fireBrightnessMin: 300, fireCountMin: 10 };
             const result = filterFires(mockFires, filters);
             expect(result).toHaveLength(2); // count >= 10: 15 and 25
         });
 
-        test('filters by high confidence only', () => {
-            const filters = { days: 90, fireBrightnessMin: 300, fireCountMin: 1, fireHighConfidence: true };
-            const result = filterFires(mockFires, filters);
-            expect(result).toHaveLength(2); // Only 'high' confidence
-            expect(result.every(f => f.confidence === 'high')).toBe(true);
-        });
-
         test('combines all filters', () => {
-            // Jan 20: brightness 450, count 15, high confidence - matches
-            // Dec 1: brightness 420, count 25, high confidence - also matches (within 60 days)
-            const filters = { days: 60, fireBrightnessMin: 400, fireCountMin: 10, fireHighConfidence: true };
+            // Jan 20: brightness 450, count 15 - matches
+            // Dec 1: brightness 420, count 25 - also matches (within 60 days)
+            const filters = { days: 60, fireBrightnessMin: 400, fireCountMin: 10 };
             const result = filterFires(mockFires, filters);
             expect(result).toHaveLength(2); // Both Jan 20 and Dec 1 match
-            expect(result.every(f => f.brightness >= 400 && f.count >= 10 && f.confidence === 'high')).toBe(true);
+            expect(result.every(f => f.brightness >= 400 && f.count >= 10)).toBe(true);
         });
     });
 

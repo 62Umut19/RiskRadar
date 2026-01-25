@@ -13,10 +13,11 @@ Date: 2026-01-25
 
 import json
 import logging
-import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List
+
+import pandas as pd
 
 from config import Config
 from firms_client import FIRMSClient
@@ -27,6 +28,52 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+CONFIDENCE_THRESHOLDS = {
+    "nominal": 30,
+    "high": 80
+}
+CONFIDENCE_LABELS = {
+    0: "low",
+    1: "nominal",
+    2: "high"
+}
+
+
+def _confidence_rank(value) -> int:
+    if value is None or pd.isna(value):
+        return 0
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"high", "h"}:
+            return 2
+        if normalized in {"nominal", "n"}:
+            return 1
+        if normalized in {"low", "l"}:
+            return 0
+        try:
+            value = float(normalized)
+        except ValueError:
+            return 0
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        return 0
+    if score >= CONFIDENCE_THRESHOLDS["high"]:
+        return 2
+    if score >= CONFIDENCE_THRESHOLDS["nominal"]:
+        return 1
+    return 0
+
+
+def _format_date(value) -> str:
+    if value is None or pd.isna(value):
+        return ""
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
 
 
 def export_fire_events(firms_client: FIRMSClient, days: int = 90) -> List[Dict]:
@@ -49,9 +96,11 @@ def export_fire_events(firms_client: FIRMSClient, days: int = 90) -> List[Dict]:
         logger.warning("No FIRMS data available")
         return []
     
-    # Filter by date
-    cutoff_date = datetime.now() - timedelta(days=days)
-    recent_fires = firms_client._data[firms_client._data['acq_date'] >= cutoff_date].copy()
+    # Filter by date (compare by day to avoid timezone edge cases)
+    cutoff_date = (datetime.utcnow() - timedelta(days=days)).date()
+    recent_fires = firms_client._data[
+        firms_client._data['acq_date'].dt.date >= cutoff_date
+    ].copy()
     
     logger.info(f"Found {len(recent_fires):,} fire detections in date range")
     
@@ -62,17 +111,20 @@ def export_fire_events(firms_client: FIRMSClient, days: int = 90) -> List[Dict]:
     recent_fires['grid_lat'] = (recent_fires['latitude'] * 10).round() / 10
     recent_fires['grid_lon'] = (recent_fires['longitude'] * 10).round() / 10
     
+    recent_fires['confidence_rank'] = recent_fires['confidence'].apply(_confidence_rank)
+
     # Aggregate by grid cell
     aggregated = recent_fires.groupby(['grid_lat', 'grid_lon']).agg({
         'brightness': ['max', 'mean', 'count'],
         'frp': 'max',
         'acq_date': ['min', 'max'],
-        'confidence': lambda x: 'high' if (x == 'high').any() else ('nominal' if (x == 'nominal').any() else 'low')
+        'confidence_rank': 'max'
     }).reset_index()
-    
+
     # Flatten column names
-    aggregated.columns = ['lat', 'lon', 'brightness_max', 'brightness_avg', 'count', 
-                          'frp_max', 'date_first', 'date_last', 'confidence']
+    aggregated.columns = ['lat', 'lon', 'brightness_max', 'brightness_avg', 'count',
+                          'frp_max', 'date_first', 'date_last', 'confidence_rank']
+    aggregated['confidence'] = aggregated['confidence_rank'].map(CONFIDENCE_LABELS)
     
     logger.info(f"Aggregated to {len(aggregated):,} grid cells")
     
@@ -82,8 +134,8 @@ def export_fire_events(firms_client: FIRMSClient, days: int = 90) -> List[Dict]:
         fire = {
             'lat': round(float(row['lat']), 1),
             'lon': round(float(row['lon']), 1),
-            'date': row['date_last'].isoformat() if hasattr(row['date_last'], 'isoformat') else str(row['date_last']),
-            'date_first': row['date_first'].isoformat() if hasattr(row['date_first'], 'isoformat') else str(row['date_first']),
+            'date': _format_date(row['date_last']),
+            'date_first': _format_date(row['date_first']),
             'brightness': round(float(row['brightness_max']), 1),
             'brightness_avg': round(float(row['brightness_avg']), 1),
             'frp': round(float(row['frp_max']), 1) if pd.notna(row['frp_max']) else None,

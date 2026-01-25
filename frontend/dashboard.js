@@ -17,6 +17,36 @@ const CONFIG = {
     mapAttribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
 };
 
+const HISTORY_THRESHOLDS = {
+    fireBrightnessHigh: 400,
+    fireBrightnessExtreme: 450,
+    quakeMagnitudeMajor: 6,
+    quakeMagnitudeModerate: 4,
+    quakeMagnitudeLabelModerate: 5
+};
+
+const HISTORY_MARKER_SIZES = {
+    fire: { base: 3, scale: 3, max: 12 },
+    quake: { base: 4, scale: 1.5, max: 18 }
+};
+
+const HISTORY_MARKER_COLORS = {
+    fireHigh: '#ff4500',
+    fireLow: '#ffa500',
+    quakeMajor: '#8b0000',
+    quakeModerate: '#8b5cf6',
+    quakeMinor: '#a78bfa'
+};
+
+const HISTORY_POPUP_COLORS = {
+    fireExtreme: '#ef4444',
+    fireHigh: '#f97316',
+    fireModerate: '#eab308',
+    quakeMajor: '#ef4444',
+    quakeModerate: '#8b5cf6',
+    quakeMinor: '#a78bfa'
+};
+
 // ============================================
 // Global State
 // ============================================
@@ -244,49 +274,45 @@ function renderMarkers() {
         markers.push(marker);
     });
 
-    if (forecastData.sites.length > 0) {
-        const group = L.featureGroup(markers);
-        map.fitBounds(group.getBounds().pad(0.1));
+    if (historyMap) {
+        syncMapView(historyMap, map);
     }
 }
 
 function createPopupHTML(site) {
     const combined = site.risks.combined.score;
     const level = getRiskLevel(combined);
+    const chipRgb = level === 'critical' ? '239,68,68' : level === 'high' ? '249,115,22' : level === 'medium' ? '234,179,8' : '34,197,94';
+    const chipColor = getRiskColor(combined);
 
     return `
-        <div style="font-family: 'Inter', sans-serif; min-width: 260px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <strong style="font-size: 1.1rem;">${site.name}</strong>
-                <span style="background: rgba(${level === 'critical' ? '239,68,68' : level === 'high' ? '249,115,22' : level === 'medium' ? '234,179,8' : '34,197,94'}, 0.2); 
-                       color: ${getRiskColor(combined)}; 
-                       padding: 3px 10px; 
-                       border-radius: 12px; 
-                       font-size: 0.7rem;
-                       text-transform: uppercase;">
+        <div class="popup-card popup-card-site">
+            <div class="popup-header">
+                <div class="popup-title">${site.name}</div>
+                <span class="popup-chip" style="--chip-bg: rgba(${chipRgb}, 0.2); --chip-color: ${chipColor};">
                     ${site.type}
                 </span>
             </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-                <div style="background: rgba(249,115,22,0.1); padding: 8px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 0.65rem; color: #9ca3af; text-transform: uppercase;">Feuer</div>
-                    <div style="font-size: 1.2rem; font-weight: 700; color: #f97316;">${site.risks.fire.score.toFixed(1)}%</div>
+
+            <div class="popup-grid">
+                <div class="popup-metric popup-metric--fire">
+                    <div class="popup-metric-label">Feuer</div>
+                    <div class="popup-metric-value">${site.risks.fire.score.toFixed(1)}%</div>
                 </div>
-                <div style="background: rgba(139,92,246,0.1); padding: 8px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 0.65rem; color: #9ca3af; text-transform: uppercase;">Erdbeben</div>
-                    <div style="font-size: 1.2rem; font-weight: 700; color: #8b5cf6;">${site.risks.quake.score.toFixed(1)}%</div>
+                <div class="popup-metric popup-metric--quake">
+                    <div class="popup-metric-label">Erdbeben</div>
+                    <div class="popup-metric-value">${site.risks.quake.score.toFixed(1)}%</div>
                 </div>
             </div>
-            
-            <div style="background: rgba(59,130,246,0.1); padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 10px;">
-                <div style="font-size: 0.65rem; color: #9ca3af; text-transform: uppercase;">Gesamt-Risiko</div>
-                <div style="font-size: 1.5rem; font-weight: 700; color: ${getRiskColor(combined)};">${combined.toFixed(1)}%</div>
-                <div style="font-size: 0.7rem; color: #6b7280; margin-top: 4px;">nächste 72h</div>
+
+            <div class="popup-highlight" style="--highlight-color: ${chipColor};">
+                <div class="popup-highlight-label">Gesamt-Risiko</div>
+                <div class="popup-highlight-value">${combined.toFixed(1)}%</div>
+                <div class="popup-highlight-sub">${getForecastWindow()}</div>
             </div>
-            
-            <div style="font-size: 0.75rem; color: #9ca3af; display: flex; align-items: center; gap: 6px;">
-                <span>💡</span>
+
+            <div class="popup-meta">
+                <span class="popup-meta-icon" aria-hidden="true">💡</span>
                 <span>${getRiskReason(site)}</span>
             </div>
         </div>
@@ -710,22 +736,21 @@ function switchView(viewName) {
     });
 
     // Show/hide views
-    document.getElementById('forecast-view').style.display =
-        viewName === 'forecast' ? 'flex' : 'none';
-    document.getElementById('history-view').style.display =
-        viewName === 'history' ? 'flex' : 'none';
+    setElementDisplay('forecast-view', viewName === 'forecast' ? 'flex' : 'none');
+    setElementDisplay('history-view', viewName === 'history' ? 'flex' : 'none');
 
     // Toggle header status indicators
-    document.getElementById('forecast-status').style.display =
-        viewName === 'forecast' ? 'flex' : 'none';
-    document.getElementById('forecast-window').style.display =
-        viewName === 'forecast' ? 'flex' : 'none';
-    document.getElementById('history-info').style.display =
-        viewName === 'history' ? 'flex' : 'none';
+    setElementDisplay('forecast-status', viewName === 'forecast' ? 'flex' : 'none');
+    setElementDisplay('forecast-window', viewName === 'forecast' ? 'flex' : 'none');
+    setElementDisplay('history-info', viewName === 'history' ? 'flex' : 'none');
 
     // Initialize history map on first switch
     if (viewName === 'history' && !historyMap) {
         initHistoryView();
+    }
+
+    if (viewName === 'forecast' && historyMap && map) {
+        syncMapView(historyMap, map);
     }
 
     // Invalidate map sizes
@@ -735,6 +760,20 @@ function switchView(viewName) {
     if (viewName === 'history' && historyMap) {
         setTimeout(() => historyMap.invalidateSize(), 100);
     }
+}
+
+function setElementDisplay(id, displayValue) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.style.display = displayValue;
+    }
+}
+
+function syncMapView(sourceMap, targetMap) {
+    if (!sourceMap || !targetMap) return;
+    const center = sourceMap.getCenter();
+    const zoom = sourceMap.getZoom();
+    targetMap.setView(center, zoom, { animate: false });
 }
 
 // ============================================
@@ -762,6 +801,9 @@ async function initHistoryView() {
     // Load events data
     await loadEventsData();
 
+    // Set default filter values
+    setHistoryFilterDefaults();
+
     // Initialize filters
     initHistoryFilters();
 
@@ -777,6 +819,11 @@ async function loadEventsData() {
         const response = await fetch(CONFIG.eventsDataPath);
         if (!response.ok) throw new Error('Events data not found');
         eventsData = await response.json();
+        eventsData = {
+            ...eventsData,
+            fires: Array.isArray(eventsData.fires) ? eventsData.fires : [],
+            earthquakes: Array.isArray(eventsData.earthquakes) ? eventsData.earthquakes : []
+        };
         console.log(`Loaded ${eventsData.fires?.length || 0} fires, ${eventsData.earthquakes?.length || 0} earthquakes`);
     } catch (error) {
         console.warn('Could not load events data:', error);
@@ -784,61 +831,281 @@ async function loadEventsData() {
     }
 }
 
+function getStepDecimals(step) {
+    const stepString = String(step);
+    if (!stepString.includes('.')) return 0;
+    return stepString.split('.')[1].length;
+}
+
+function setRangeToMidpoint(input) {
+    if (!input) return null;
+    const min = parseFloat(input.min);
+    const max = parseFloat(input.max);
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+    let step = parseFloat(input.step);
+    if (!Number.isFinite(step) || step <= 0) step = 1;
+
+    const midpoint = min + (max - min) / 2;
+    const steps = Math.round((midpoint - min) / step);
+    const value = min + steps * step;
+    const decimals = getStepDecimals(step);
+    const formatted = decimals > 0 ? value.toFixed(decimals) : String(Math.round(value));
+    input.value = formatted;
+    return parseFloat(formatted);
+}
+
+function setSelectToMidpoint(select) {
+    if (!select) return;
+    const options = Array.from(select.options);
+    const values = options
+        .map(option => parseFloat(option.value))
+        .filter(Number.isFinite);
+    if (values.length === 0) return;
+
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const midpoint = min + (max - min) / 2;
+
+    let closestOption = null;
+    let smallestDiff = Number.POSITIVE_INFINITY;
+
+    options.forEach(option => {
+        const value = parseFloat(option.value);
+        if (!Number.isFinite(value)) return;
+        const diff = Math.abs(value - midpoint);
+        if (diff < smallestDiff) {
+            smallestDiff = diff;
+            closestOption = option;
+        }
+    });
+
+    if (closestOption) {
+        select.value = closestOption.value;
+    }
+}
+
+function setHistoryFilterDefaults() {
+    setSelectToMidpoint(document.getElementById('history-time-range'));
+
+    const brightnessValue = setRangeToMidpoint(document.getElementById('fire-brightness-min'));
+    if (Number.isFinite(brightnessValue)) {
+        document.getElementById('fire-brightness-value').textContent = `${brightnessValue}K`;
+    }
+
+    const countValue = setRangeToMidpoint(document.getElementById('fire-count-min'));
+    if (Number.isFinite(countValue)) {
+        document.getElementById('fire-count-value').textContent = `${countValue}`;
+    }
+
+    const magnitudeValue = setRangeToMidpoint(document.getElementById('quake-magnitude-min'));
+    if (Number.isFinite(magnitudeValue)) {
+        document.getElementById('quake-magnitude-value').textContent = magnitudeValue.toFixed(1);
+    }
+
+    const depthValue = setRangeToMidpoint(document.getElementById('quake-depth-max'));
+    if (Number.isFinite(depthValue)) {
+        document.getElementById('quake-depth-value').textContent = `${depthValue}km`;
+    }
+}
+
+function getHistoryFilterElements() {
+    return {
+        timeRange: document.getElementById('history-time-range'),
+        showFires: document.getElementById('show-fires'),
+        fireBrightnessMin: document.getElementById('fire-brightness-min'),
+        fireCountMin: document.getElementById('fire-count-min'),
+        fireHighConfidence: document.getElementById('fire-high-confidence'),
+        showQuakes: document.getElementById('show-quakes'),
+        quakeMagnitudeMin: document.getElementById('quake-magnitude-min'),
+        quakeDepthMax: document.getElementById('quake-depth-max')
+    };
+}
+
+function parseEventDate(value) {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value !== 'string') return null;
+
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+        const [year, month, day] = trimmed.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    }
+
+    const parsed = new Date(trimmed);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed;
+}
+
+function formatEventDate(value, options) {
+    const date = parseEventDate(value);
+    if (!date) return '';
+    return date.toLocaleDateString('de-DE', options);
+}
+
+function getHistoryReferenceDate() {
+    return (
+        parseEventDate(eventsData?.data_range?.end) ||
+        parseEventDate(eventsData?.generated_at) ||
+        new Date()
+    );
+}
+
+function getHistoryCutoffDate(referenceDate, days) {
+    const cutoffDate = new Date(referenceDate);
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    return cutoffDate;
+}
+
+function filterFireEvents(fires, filters, cutoffDate) {
+    return fires.filter(fire => {
+        const fireDate = parseEventDate(fire.date);
+        if (!fireDate || fireDate < cutoffDate) return false;
+        if (fire.brightness < filters.fireBrightnessMin) return false;
+        if (fire.count < filters.fireCountMin) return false;
+        if (filters.fireHighConfidence && fire.confidence !== 'high') return false;
+        return true;
+    });
+}
+
+function filterQuakeEvents(quakes, filters, cutoffDate) {
+    return quakes.filter(quake => {
+        const quakeDate = parseEventDate(quake.date);
+        if (!quakeDate || quakeDate < cutoffDate) return false;
+        if (quake.magnitude < filters.quakeMagnitudeMin) return false;
+        if (quake.depth > filters.quakeDepthMax) return false;
+        return true;
+    });
+}
+
+function getFireMarkerRadius(count) {
+    return Math.min(
+        HISTORY_MARKER_SIZES.fire.base + Math.log10(count + 1) * HISTORY_MARKER_SIZES.fire.scale,
+        HISTORY_MARKER_SIZES.fire.max
+    );
+}
+
+function getQuakeMarkerRadius(magnitude) {
+    return Math.min(
+        HISTORY_MARKER_SIZES.quake.base + magnitude * HISTORY_MARKER_SIZES.quake.scale,
+        HISTORY_MARKER_SIZES.quake.max
+    );
+}
+
+function getFireMarkerColor(brightness) {
+    return brightness >= HISTORY_THRESHOLDS.fireBrightnessHigh
+        ? HISTORY_MARKER_COLORS.fireHigh
+        : HISTORY_MARKER_COLORS.fireLow;
+}
+
+function getQuakeMarkerColor(magnitude) {
+    if (magnitude >= HISTORY_THRESHOLDS.quakeMagnitudeMajor) return HISTORY_MARKER_COLORS.quakeMajor;
+    if (magnitude >= HISTORY_THRESHOLDS.quakeMagnitudeModerate) return HISTORY_MARKER_COLORS.quakeModerate;
+    return HISTORY_MARKER_COLORS.quakeMinor;
+}
+
+function getFireBrightnessPresentation(brightness) {
+    if (brightness >= HISTORY_THRESHOLDS.fireBrightnessExtreme) {
+        return { label: 'Extrem', color: HISTORY_POPUP_COLORS.fireExtreme };
+    }
+    if (brightness >= HISTORY_THRESHOLDS.fireBrightnessHigh) {
+        return { label: 'Hoch', color: HISTORY_POPUP_COLORS.fireHigh };
+    }
+    return { label: 'Moderat', color: HISTORY_POPUP_COLORS.fireModerate };
+}
+
+function getQuakeMagnitudePresentation(magnitude) {
+    if (magnitude >= HISTORY_THRESHOLDS.quakeMagnitudeMajor) {
+        return { label: 'Stark', color: HISTORY_POPUP_COLORS.quakeMajor };
+    }
+    if (magnitude >= HISTORY_THRESHOLDS.quakeMagnitudeLabelModerate) {
+        return { label: 'Moderat', color: HISTORY_POPUP_COLORS.quakeModerate };
+    }
+    return { label: 'Leicht', color: HISTORY_POPUP_COLORS.quakeMinor };
+}
+
 function initHistoryFilters() {
+    const elements = getHistoryFilterElements();
+    if (!elements.timeRange || !elements.showFires || !elements.fireBrightnessMin || !elements.fireCountMin ||
+        !elements.showQuakes || !elements.quakeMagnitudeMin || !elements.quakeDepthMax) {
+        console.warn('History filters missing required elements');
+        return;
+    }
+
     // Time range
-    document.getElementById('history-time-range').addEventListener('change', applyHistoryFilters);
+    elements.timeRange.addEventListener('change', applyHistoryFilters);
 
     // Fire filters
-    document.getElementById('show-fires').addEventListener('change', (e) => {
-        document.getElementById('fire-filters').style.opacity = e.target.checked ? '1' : '0.5';
+    elements.showFires.addEventListener('change', (e) => {
+        const fireFilters = document.getElementById('fire-filters');
+        if (fireFilters) {
+            fireFilters.style.opacity = e.target.checked ? '1' : '0.5';
+        }
         applyHistoryFilters();
     });
-    document.getElementById('fire-brightness-min').addEventListener('input', (e) => {
+    elements.fireBrightnessMin.addEventListener('input', (e) => {
         document.getElementById('fire-brightness-value').textContent = e.target.value + 'K';
         applyHistoryFilters();
     });
-    document.getElementById('fire-count-min').addEventListener('input', (e) => {
+    elements.fireCountMin.addEventListener('input', (e) => {
         document.getElementById('fire-count-value').textContent = e.target.value;
         applyHistoryFilters();
     });
-    document.getElementById('fire-high-confidence').addEventListener('change', applyHistoryFilters);
+    if (elements.fireHighConfidence) {
+        elements.fireHighConfidence.addEventListener('change', applyHistoryFilters);
+    }
 
     // Quake filters
-    document.getElementById('show-quakes').addEventListener('change', (e) => {
-        document.getElementById('quake-filters').style.opacity = e.target.checked ? '1' : '0.5';
+    elements.showQuakes.addEventListener('change', (e) => {
+        const quakeFilters = document.getElementById('quake-filters');
+        if (quakeFilters) {
+            quakeFilters.style.opacity = e.target.checked ? '1' : '0.5';
+        }
         applyHistoryFilters();
     });
-    document.getElementById('quake-magnitude-min').addEventListener('input', (e) => {
+    elements.quakeMagnitudeMin.addEventListener('input', (e) => {
         document.getElementById('quake-magnitude-value').textContent = parseFloat(e.target.value).toFixed(1);
         applyHistoryFilters();
     });
-    document.getElementById('quake-depth-max').addEventListener('input', (e) => {
+    elements.quakeDepthMax.addEventListener('input', (e) => {
         document.getElementById('quake-depth-value').textContent = e.target.value + 'km';
         applyHistoryFilters();
     });
 }
 
 function applyHistoryFilters() {
+    const elements = getHistoryFilterElements();
+    if (!elements.timeRange || !elements.showFires || !elements.fireBrightnessMin || !elements.fireCountMin ||
+        !elements.showQuakes || !elements.quakeMagnitudeMin || !elements.quakeDepthMax) {
+        console.warn('History filters missing required elements');
+        return;
+    }
+
     const filters = {
-        days: parseInt(document.getElementById('history-time-range').value),
-        showFires: document.getElementById('show-fires').checked,
-        fireBrightnessMin: parseInt(document.getElementById('fire-brightness-min').value),
-        fireCountMin: parseInt(document.getElementById('fire-count-min').value),
-        fireHighConfidence: document.getElementById('fire-high-confidence').checked,
-        showQuakes: document.getElementById('show-quakes').checked,
-        quakeMagnitudeMin: parseFloat(document.getElementById('quake-magnitude-min').value),
-        quakeDepthMax: parseInt(document.getElementById('quake-depth-max').value)
+        days: parseInt(elements.timeRange.value),
+        showFires: elements.showFires.checked,
+        fireBrightnessMin: parseInt(elements.fireBrightnessMin.value),
+        fireCountMin: parseInt(elements.fireCountMin.value),
+        fireHighConfidence: elements.fireHighConfidence ? elements.fireHighConfidence.checked : false,
+        showQuakes: elements.showQuakes.checked,
+        quakeMagnitudeMin: parseFloat(elements.quakeMagnitudeMin.value),
+        quakeDepthMax: parseInt(elements.quakeDepthMax.value)
     };
 
-    const fireCount = renderFireEvents(filters);
-    const quakeCount = renderQuakeEvents(filters);
+    const referenceDate = getHistoryReferenceDate();
+    const cutoffDate = getHistoryCutoffDate(referenceDate, filters.days);
+
+    const fireCount = renderFireEvents(filters, cutoffDate);
+    const quakeCount = renderQuakeEvents(filters, cutoffDate);
 
     // Update total
     document.getElementById('visible-total-count').textContent =
         (fireCount + quakeCount).toLocaleString('de-DE');
 }
 
-function renderFireEvents(filters) {
+function renderFireEvents(filters, cutoffDate) {
     fireLayer.clearLayers();
 
     if (!filters.showFires || !eventsData?.fires) {
@@ -846,22 +1113,12 @@ function renderFireEvents(filters) {
         return 0;
     }
 
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - filters.days);
-
-    const filteredFires = eventsData.fires.filter(fire => {
-        const fireDate = new Date(fire.date);
-        if (fireDate < cutoffDate) return false;
-        if (fire.brightness < filters.fireBrightnessMin) return false;
-        if (fire.count < filters.fireCountMin) return false;
-        if (filters.fireHighConfidence && fire.confidence !== 'high') return false;
-        return true;
-    });
+    const filteredFires = filterFireEvents(eventsData.fires, filters, cutoffDate);
 
     filteredFires.forEach(fire => {
         // Size based on count (aggregated fires)
-        const baseRadius = Math.min(3 + Math.log10(fire.count + 1) * 3, 12);
-        const color = fire.brightness >= 400 ? '#ff4500' : '#ffa500';
+        const baseRadius = getFireMarkerRadius(fire.count);
+        const color = getFireMarkerColor(fire.brightness);
 
         const marker = L.circleMarker([fire.lat, fire.lon], {
             radius: baseRadius,
@@ -881,7 +1138,7 @@ function renderFireEvents(filters) {
     return filteredFires.length;
 }
 
-function renderQuakeEvents(filters) {
+function renderQuakeEvents(filters, cutoffDate) {
     quakeLayer.clearLayers();
 
     if (!filters.showQuakes || !eventsData?.earthquakes) {
@@ -889,22 +1146,12 @@ function renderQuakeEvents(filters) {
         return 0;
     }
 
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - filters.days);
-
-    const filteredQuakes = eventsData.earthquakes.filter(quake => {
-        const quakeDate = new Date(quake.date);
-        if (quakeDate < cutoffDate) return false;
-        if (quake.magnitude < filters.quakeMagnitudeMin) return false;
-        if (quake.depth > filters.quakeDepthMax) return false;
-        return true;
-    });
+    const filteredQuakes = filterQuakeEvents(eventsData.earthquakes, filters, cutoffDate);
 
     filteredQuakes.forEach(quake => {
         // Size based on magnitude
-        const radius = Math.min(4 + quake.magnitude * 1.5, 18);
-        const color = quake.magnitude >= 6 ? '#8b0000' :
-            quake.magnitude >= 4 ? '#8b5cf6' : '#a78bfa';
+        const radius = getQuakeMarkerRadius(quake.magnitude);
+        const color = getQuakeMarkerColor(quake.magnitude);
 
         const marker = L.circleMarker([quake.lat, quake.lon], {
             radius: radius,
@@ -925,66 +1172,66 @@ function renderQuakeEvents(filters) {
 }
 
 function createFirePopup(fire) {
-    const date = new Date(fire.date).toLocaleDateString('de-DE', {
+    const date = formatEventDate(fire.date, {
         day: '2-digit', month: '2-digit', year: 'numeric'
-    });
-    const firstDate = fire.date_first ? new Date(fire.date_first).toLocaleDateString('de-DE', {
+    }) || 'Unbekannt';
+    const firstDate = fire.date_first ? formatEventDate(fire.date_first, {
         day: '2-digit', month: '2-digit', year: 'numeric'
-    }) : null;
+    }) : '';
 
-    const brightnessLevel = fire.brightness >= 450 ? 'Extrem' : fire.brightness >= 400 ? 'Hoch' : 'Moderat';
-    const brightnessColor = fire.brightness >= 450 ? '#ef4444' : fire.brightness >= 400 ? '#f97316' : '#eab308';
+    const brightnessPresentation = getFireBrightnessPresentation(fire.brightness);
+    const brightnessLevel = brightnessPresentation.label;
+    const brightnessColor = brightnessPresentation.color;
+    const confidenceLabel = fire.confidence === 'high' ? 'Hoch' : fire.confidence === 'nominal' ? 'Normal' : 'Niedrig';
+    const confidenceClass = fire.confidence === 'high' ? 'popup-confidence-high'
+        : fire.confidence === 'nominal' ? 'popup-confidence-medium'
+            : 'popup-confidence-low';
 
     return `
-        <div style="font-family: 'Inter', sans-serif; min-width: 260px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <strong style="font-size: 1.1rem;">🔥 Feuer-Detektion</strong>
-                <span style="background: rgba(249,115,22,0.2); 
-                       color: #f97316; 
-                       padding: 3px 10px; 
-                       border-radius: 12px; 
-                       font-size: 0.7rem;
-                       text-transform: uppercase;">
+        <div class="popup-card popup-card-fire">
+            <div class="popup-header">
+                <div class="popup-title">🔥 Feuer-Detektion</div>
+                <span class="popup-chip" style="--chip-bg: rgba(249,115,22,0.2); --chip-color: ${HISTORY_POPUP_COLORS.fireHigh};">
                     ${fire.count} Detektionen
                 </span>
             </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-                <div style="background: rgba(249,115,22,0.1); padding: 8px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 0.65rem; color: #9ca3af; text-transform: uppercase;">Max. Brightness</div>
-                    <div style="font-size: 1.2rem; font-weight: 700; color: ${brightnessColor};">${fire.brightness.toFixed(0)}K</div>
+
+            <div class="popup-grid">
+                <div class="popup-metric" style="--metric-color: ${brightnessColor};">
+                    <div class="popup-metric-label">Max. Brightness</div>
+                    <div class="popup-metric-value">${fire.brightness.toFixed(0)}K</div>
                 </div>
-                <div style="background: rgba(234,179,8,0.1); padding: 8px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 0.65rem; color: #9ca3af; text-transform: uppercase;">Ø Brightness</div>
-                    <div style="font-size: 1.2rem; font-weight: 700; color: #eab308;">${fire.brightness_avg?.toFixed(0) || 'N/A'}K</div>
+                <div class="popup-metric" style="--metric-color: ${HISTORY_POPUP_COLORS.fireModerate};">
+                    <div class="popup-metric-label">Ø Brightness</div>
+                    <div class="popup-metric-value">${fire.brightness_avg?.toFixed(0) || 'N/A'}K</div>
                 </div>
             </div>
-            
-            <div style="background: rgba(249,115,22,0.1); padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 10px;">
-                <div style="font-size: 0.65rem; color: #9ca3af; text-transform: uppercase;">Intensität</div>
-                <div style="font-size: 1.3rem; font-weight: 700; color: ${brightnessColor};">${brightnessLevel}</div>
+
+            <div class="popup-highlight" style="--highlight-color: ${brightnessColor};">
+                <div class="popup-highlight-label">Intensität</div>
+                <div class="popup-highlight-value">${brightnessLevel}</div>
             </div>
-            
-            <div style="font-size: 0.8rem; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 10px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+
+            <div class="popup-details">
+                <div class="popup-row">
                     <span>📅 Letztes Datum:</span>
-                    <strong style="color: #374151;">${date}</strong>
+                    <strong>${date}</strong>
                 </div>
                 ${firstDate && firstDate !== date ? `
-                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <div class="popup-row">
                     <span>📅 Erstes Datum:</span>
-                    <strong style="color: #374151;">${firstDate}</strong>
+                    <strong>${firstDate}</strong>
                 </div>
                 ` : ''}
                 ${fire.frp ? `
-                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <div class="popup-row">
                     <span>⚡ Max. FRP:</span>
-                    <strong style="color: #374151;">${fire.frp.toFixed(1)} MW</strong>
+                    <strong>${fire.frp.toFixed(1)} MW</strong>
                 </div>
                 ` : ''}
-                <div style="display: flex; justify-content: space-between;">
+                <div class="popup-row">
                     <span>✓ Konfidenz:</span>
-                    <strong style="color: ${fire.confidence === 'high' ? '#22c55e' : '#9ca3af'};">${fire.confidence === 'high' ? 'Hoch' : fire.confidence === 'nominal' ? 'Normal' : 'Niedrig'}</strong>
+                    <strong class="${confidenceClass}">${confidenceLabel}</strong>
                 </div>
             </div>
         </div>
@@ -992,48 +1239,44 @@ function createFirePopup(fire) {
 }
 
 function createQuakePopup(quake) {
-    const date = new Date(quake.date).toLocaleDateString('de-DE', {
+    const date = formatEventDate(quake.date, {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
+    }) || 'Unbekannt';
 
-    const magLevel = quake.magnitude >= 6 ? 'Stark' : quake.magnitude >= 5 ? 'Moderat' : 'Leicht';
-    const magColor = quake.magnitude >= 6 ? '#ef4444' : quake.magnitude >= 5 ? '#8b5cf6' : '#a78bfa';
+    const magPresentation = getQuakeMagnitudePresentation(quake.magnitude);
+    const magLevel = magPresentation.label;
+    const magColor = magPresentation.color;
     const depthLevel = quake.depth <= 70 ? 'Flach' : quake.depth <= 300 ? 'Mittel' : 'Tief';
 
     return `
-        <div style="font-family: 'Inter', sans-serif; min-width: 260px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <strong style="font-size: 1.1rem;">🌍 Erdbeben</strong>
-                <span style="background: rgba(139,92,246,0.2); 
-                       color: #8b5cf6; 
-                       padding: 3px 10px; 
-                       border-radius: 12px; 
-                       font-size: 0.7rem;
-                       text-transform: uppercase;">
+        <div class="popup-card popup-card-quake">
+            <div class="popup-header">
+                <div class="popup-title">🌍 Erdbeben</div>
+                <span class="popup-chip" style="--chip-bg: rgba(139,92,246,0.2); --chip-color: ${HISTORY_POPUP_COLORS.quakeModerate};">
                     ${magLevel}
                 </span>
             </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-                <div style="background: rgba(139,92,246,0.1); padding: 8px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 0.65rem; color: #9ca3af; text-transform: uppercase;">Magnitude</div>
-                    <div style="font-size: 1.5rem; font-weight: 700; color: ${magColor};">M${quake.magnitude.toFixed(1)}</div>
+
+            <div class="popup-grid">
+                <div class="popup-metric" style="--metric-color: ${magColor};">
+                    <div class="popup-metric-label">Magnitude</div>
+                    <div class="popup-metric-value">M${quake.magnitude.toFixed(1)}</div>
                 </div>
-                <div style="background: rgba(59,130,246,0.1); padding: 8px; border-radius: 6px; text-align: center;">
-                    <div style="font-size: 0.65rem; color: #9ca3af; text-transform: uppercase;">Tiefe</div>
-                    <div style="font-size: 1.2rem; font-weight: 700; color: #3b82f6;">${quake.depth.toFixed(0)} km</div>
-                    <div style="font-size: 0.6rem; color: #9ca3af;">${depthLevel}</div>
+                <div class="popup-metric" style="--metric-color: var(--accent-combined);">
+                    <div class="popup-metric-label">Tiefe</div>
+                    <div class="popup-metric-value">${quake.depth.toFixed(0)} km</div>
+                    <div class="popup-metric-sub">${depthLevel}</div>
                 </div>
             </div>
-            
-            <div style="font-size: 0.8rem; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 10px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+
+            <div class="popup-details">
+                <div class="popup-row">
                     <span>📅 Datum:</span>
-                    <strong style="color: #374151;">${date}</strong>
+                    <strong>${date}</strong>
                 </div>
-                <div style="margin-top: 6px;">
-                    <span>📍 </span>
-                    <strong style="color: #374151;">${quake.place}</strong>
+                <div class="popup-row">
+                    <span>📍 Ort:</span>
+                    <strong>${quake.place}</strong>
                 </div>
             </div>
         </div>
