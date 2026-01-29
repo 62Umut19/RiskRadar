@@ -57,8 +57,8 @@ let metadata = null;
 let siteMetadata = null;
 let playbooksData = null;
 let selectedSite = null;
-let currentFilter = 'all';
-let currentSort = 'risk-desc';
+let currentFilters = new Set(['hub', 'depot', 'sortierzentrum']);
+let currentSort = 'name-asc';
 
 // History View State
 let historyMap = null;
@@ -80,6 +80,7 @@ async function init() {
         updateMetadataUI();
         renderSiteList();
         initFilterButtons();
+        initGlobalTooltipHandlers();
     } catch (error) {
         console.error('Failed to initialize dashboard:', error);
         showError(error.message);
@@ -182,43 +183,58 @@ function getRiskColor(score) {
     return colors[level];
 }
 
+function getImpactColor(score) {
+    if (score >= 7.5) return '#ef4444';
+    if (score >= 5) return '#f97316';
+    if (score >= 2.5) return '#eab308';
+    return '#22c55e';
+}
+
 function getForecastWindow() {
     return 'nächste 72h';
 }
 
-function getRiskReason(site) {
-    const fireScore = site.risks.fire.score;
-    const quakeScore = site.risks.quake.score;
 
-    const reasons = [];
-
-    if (quakeScore > fireScore * 2) {
-        reasons.push('Erdbeben +++');
-        if (quakeScore > 80) reasons.push('seismische Zone');
-    } else if (fireScore > quakeScore * 2) {
-        reasons.push('Feuer +++');
-        if (fireScore > 20) reasons.push('Trockenheit');
-    } else {
-        if (quakeScore > 50) reasons.push('Erdbeben ++');
-        if (fireScore > 15) reasons.push('Feuer +');
-    }
-
-    if (site.criticality === 'critical') {
-        reasons.push('kritischer Standort');
-    }
-
-    return reasons.length > 0 ? reasons.join(' | ') : 'Kombiniertes Risiko';
-}
 
 function getImpactScore(site) {
-    const weights = siteMetadata.criticality_weights || {
-        critical: 1.5,
-        high: 1.2,
-        medium: 1.0,
-        low: 0.8
+    // 1. Financial Score (0-10)
+    // Baseline: 100M EUR = 10 points
+    const maxInventory = 100000000;
+    let financialScore = (site.inventory_value_eur / maxInventory) * 10;
+    if (financialScore > 10) financialScore = 10;
+
+    // 2. Operational Score (0-10)
+    // Baseline: 200,000 items/day = 10 points
+    const maxThroughput = 200000;
+    let operationalScore = (site.daily_throughput / maxThroughput) * 10;
+    if (operationalScore > 10) operationalScore = 10;
+
+    // 3. Strategic Criticality Score (0-10)
+    const criticalityScores = {
+        'critical': 10,
+        'high': 7,
+        'medium': 4,
+        'low': 2
     };
-    const weight = weights[site.criticality] || 1.0;
-    return site.risks.combined.score * weight;
+    const strategicScore = criticalityScores[site.criticality] || 5;
+
+    // Weighted Site Value Index (0-10)
+    const siteValueIndex = (financialScore * 0.4) + (operationalScore * 0.3) + (strategicScore * 0.3);
+
+    // Final Impact Score (0-10)
+    const riskProb = site.risks.combined.score / 100;
+    const finalScore = riskProb * siteValueIndex;
+
+    return {
+        score: finalScore,
+        breakdown: {
+            siteValueIndex: siteValueIndex,
+            financialScore: financialScore,
+            operationalScore: operationalScore,
+            strategicScore: strategicScore,
+            riskProb: riskProb
+        }
+    };
 }
 
 // ============================================
@@ -311,10 +327,7 @@ function createPopupHTML(site) {
                 <div class="popup-highlight-sub">${getForecastWindow()}</div>
             </div>
 
-            <div class="popup-meta">
-                <span class="popup-meta-icon" aria-hidden="true">💡</span>
-                <span>${getRiskReason(site)}</span>
-            </div>
+
         </div>
     `;
 }
@@ -322,23 +335,22 @@ function createPopupHTML(site) {
 // ============================================
 // Site List
 // ============================================
-const SITE_FILTERS = {
-    hub: site => site.type === 'hub',
-    depot: site => site.type === 'depot',
-    sortierzentrum: site => site.type === 'sortierzentrum'
-};
+
 
 const SITE_SORTS = {
     'name-asc': (a, b) => a.name.localeCompare(b.name, 'de'),
     'name-desc': (a, b) => b.name.localeCompare(a.name, 'de'),
     'risk-asc': (a, b) => a.risks.combined.score - b.risks.combined.score,
-    'risk-desc': (a, b) => b.risks.combined.score - a.risks.combined.score
+    'risk-desc': (a, b) => b.risks.combined.score - a.risks.combined.score,
+    'impact-asc': (a, b) => getImpactScore(a).score - getImpactScore(b).score,
+    'impact-desc': (a, b) => getImpactScore(b).score - getImpactScore(a).score
 };
 
 function getSiteListItemMarkup(site) {
     const score = site.risks.combined.score;
     const level = getRiskLevel(score);
     const isSelected = selectedSite && selectedSite.name === site.name;
+    const impactScore = getImpactScore(site).score;
 
     return `
         <button type="button" class="site-item level-${level} ${isSelected ? 'selected' : ''}" onclick="selectSiteByName('${site.name}')" ${isSelected ? 'aria-current="true"' : ''}>
@@ -351,7 +363,10 @@ function getSiteListItemMarkup(site) {
                     <span class="site-region">${site.region}</span>
                 </div>
             </div>
-            <span class="site-risk">${score.toFixed(1)}%</span>
+            <div class="site-metrics" style="--impact-color: ${getImpactColor(impactScore)};">
+                <span class="site-impact">BIS ${impactScore.toFixed(1)}</span>
+                <span class="site-risk">${score.toFixed(1)}%</span>
+            </div>
         </button>
     `;
 }
@@ -367,9 +382,8 @@ function renderSiteList() {
     let sites = [...forecastData.sites];
 
     // Apply type filter
-    const filterFn = SITE_FILTERS[currentFilter];
-    if (filterFn) {
-        sites = sites.filter(filterFn);
+    if (currentFilters.size < 3) {
+        sites = sites.filter(site => currentFilters.has(site.type));
     }
 
     // Apply sorting
@@ -415,6 +429,8 @@ function closeSiteDetails() {
     document.querySelector('.panel-right').style.display = 'none';
     invalidateMapSize();
 
+    hideTooltip();
+
     // Close all popups
     markers.forEach(marker => marker.closePopup());
 
@@ -423,6 +439,8 @@ function closeSiteDetails() {
 }
 
 function showSiteDetails(site) {
+    hideTooltip();
+
     // Show the right panel
     document.querySelector('.panel-right').style.display = 'flex';
     invalidateMapSize();
@@ -431,7 +449,8 @@ function showSiteDetails(site) {
 
     const level = getRiskLevel(site.risks.combined.score);
     const totalVehicles = (site.vehicles.trucks || 0) + (site.vehicles.vans || 0) + (site.vehicles.forklifts || 0);
-    const impactScore = getImpactScore(site);
+    const impactData = getImpactScore(site);
+    const impactScore = impactData.score;
     const criticalityLabel = {
         'critical': 'Kritisch',
         'high': 'Hoch',
@@ -445,6 +464,14 @@ function showSiteDetails(site) {
         'medium': '#eab308',
         'low': '#22c55e'
     }[site.criticality] || '#9ca3af';
+
+    const tooltipText = `Berechnung:\n` +
+        `• Finanziell (${(site.inventory_value_eur / 1000000).toFixed(1)}M €): ${impactData.breakdown.financialScore.toFixed(1)}/10 (40%)\n` +
+        `• Operationell (${(site.daily_throughput / 1000).toFixed(0)}k/Tag): ${impactData.breakdown.operationalScore.toFixed(1)}/10 (30%)\n` +
+        `• Strategisch (${criticalityLabel}): ${impactData.breakdown.strategicScore.toFixed(1)}/10 (30%)\n` +
+        `----------------\n` +
+        `Site Value Index: ${impactData.breakdown.siteValueIndex.toFixed(2)}\n` +
+        `× Risiko-Prob.: ${(impactData.breakdown.riskProb * 100).toFixed(1)}%`;
 
     content.innerHTML = `
         <div class="site-detail-header">
@@ -466,19 +493,25 @@ function showSiteDetails(site) {
         <!-- Impact Score Banner -->
         <div class="impact-score-banner" style="background: linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(139,92,246,0.15) 100%); 
              border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px;">
                 <div>
                     <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px;">
                         <i class="fas fa-bolt"></i> Business Impact Score
                     </div>
-                    <div style="font-size: 1.4rem; font-weight: 700; color: ${getRiskColor(impactScore)};">
+                    <div style="font-size: 1.4rem; font-weight: 700; color: ${getImpactColor(impactScore)};">
                         ${impactScore.toFixed(1)}
                     </div>
                 </div>
                 <div style="text-align: right; font-size: 0.7rem; color: var(--text-secondary);">
-                    <div>Risiko: ${site.risks.combined.score.toFixed(1)}%</div>
-                    <div>× Faktor: ${(siteMetadata.criticality_weights?.[site.criticality] || 1.0).toFixed(1)}x</div>
+                    <div>Probabilität: ${(impactData.breakdown.riskProb * 100).toFixed(1)}%</div>
+                    <div>× Site Value: ${impactData.breakdown.siteValueIndex.toFixed(1)}</div>
                 </div>
+            </div>
+
+            <div class="impact-tooltip-row">
+                <button type="button" class="impact-tooltip-trigger" aria-expanded="false" aria-label="Berechnung des Business Impact Scores anzeigen">
+                    <i class="fas fa-circle-info"></i> Berechnung
+                </button>
             </div>
         </div>
         
@@ -518,20 +551,6 @@ function showSiteDetails(site) {
             </div>
         </div>
         
-        <!-- Goods Categories -->
-        ${site.goods_categories && site.goods_categories.length > 0 ? `
-            <div style="margin-top: 12px;">
-                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
-                    <i class="fas fa-tags"></i> Warenkategorien
-                </div>
-                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                    ${site.goods_categories.map(cat => `
-                        <span style="background: rgba(100,116,139,0.3); color: var(--text-secondary); padding: 3px 8px; border-radius: 4px; font-size: 0.7rem;">${cat}</span>
-                    `).join('')}
-                </div>
-            </div>
-        ` : ''}
-        
         <!-- Backup Sites -->
         ${site.backup_sites && site.backup_sites.length > 0 ? `
             <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color);">
@@ -557,6 +576,23 @@ function showSiteDetails(site) {
         <!-- Playbook Section -->
         ${getPlaybookHTML(site)}
     `;
+
+    const impactTooltipTrigger = content.querySelector('.impact-tooltip-trigger');
+    if (impactTooltipTrigger) {
+        impactTooltipTrigger.addEventListener('click', (event) => {
+            event.stopPropagation();
+            toggleTooltip(event, tooltipText);
+        });
+    }
+
+    const impactScoreBanner = content.querySelector('.impact-score-banner');
+    if (impactScoreBanner) {
+        impactScoreBanner.addEventListener('click', (event) => {
+            if (event.target.closest('.impact-tooltip-trigger')) return;
+            event.stopPropagation();
+            toggleTooltip(event, tooltipText);
+        });
+    }
 }
 
 // ============================================
@@ -638,25 +674,6 @@ function getPlaybookHTML(site) {
                 `).join('')}
             </div>
             
-            <!-- Checklist Preview -->
-            <details style="cursor: pointer;">
-                <summary style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; outline: none;">
-                    <i class="fas fa-clipboard-check"></i> Checkliste (${playbook.checklist.length} Punkte)
-                </summary>
-                <div style="margin-top: 8px; padding-left: 8px;">
-                    ${playbook.checklist.slice(0, 5).map(item => `
-                        <div style="display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 0.7rem; color: var(--text-secondary);">
-                            <i class="far fa-square" style="color: var(--text-muted);"></i>
-                            ${item}
-                        </div>
-                    `).join('')}
-                    ${playbook.checklist.length > 5 ? `
-                        <div style="font-size: 0.65rem; color: var(--text-muted); padding-top: 4px;">
-                            +${playbook.checklist.length - 5} weitere...
-                        </div>
-                    ` : ''}
-                </div>
-            </details>
         </div>
     `;
 }
@@ -667,14 +684,24 @@ function getPlaybookHTML(site) {
 function initFilterButtons() {
     const buttons = document.querySelectorAll('.filter-btn');
     buttons.forEach(btn => {
+        // Set initial state based on default active class
+        if (btn.classList.contains('active')) {
+            currentFilters.add(btn.dataset.filter);
+        }
+
         btn.setAttribute('aria-pressed', btn.classList.contains('active'));
+
         btn.addEventListener('click', () => {
-            buttons.forEach(b => {
-                const isActive = b === btn;
-                b.classList.toggle('active', isActive);
-                b.setAttribute('aria-pressed', isActive);
-            });
-            currentFilter = btn.dataset.filter;
+            const filterType = btn.dataset.filter;
+            const isActive = btn.classList.toggle('active');
+            btn.setAttribute('aria-pressed', isActive);
+
+            if (isActive) {
+                currentFilters.add(filterType);
+            } else {
+                currentFilters.delete(filterType);
+            }
+
             renderSiteList();
         });
     });
@@ -1281,6 +1308,103 @@ function createQuakePopup(quake) {
             </div>
         </div>
     `;
+}
+
+
+// ============================================
+// Global Tooltip Helper
+// ============================================
+let tooltipEl = null;
+let tooltipTarget = null;
+
+function showTooltip(event, text) {
+    if (!tooltipEl) {
+        tooltipEl = document.createElement('div');
+        tooltipEl.className = 'custom-tooltip';
+        tooltipEl.setAttribute('role', 'tooltip');
+        tooltipEl.setAttribute('id', 'impact-tooltip');
+        document.body.appendChild(tooltipEl);
+    }
+
+    tooltipEl.innerText = text;
+    tooltipEl.style.display = 'block';
+    tooltipEl.classList.add('visible');
+    tooltipEl.setAttribute('aria-hidden', 'false');
+
+    positionTooltip(event.currentTarget);
+}
+
+function positionTooltip(target) {
+    if (!tooltipEl || !target) return;
+
+    const rect = target.getBoundingClientRect();
+    const tooltipRect = tooltipEl.getBoundingClientRect();
+
+    let top = rect.top - tooltipRect.height - 10;
+    let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+
+    if (top < 10) {
+        top = rect.bottom + 10;
+    }
+
+    if (left + tooltipRect.width > window.innerWidth - 10) {
+        left = window.innerWidth - tooltipRect.width - 10;
+    }
+
+    if (left < 10) {
+        left = 10;
+    }
+
+    tooltipEl.style.top = `${top}px`;
+    tooltipEl.style.left = `${left}px`;
+}
+
+function hideTooltip() {
+    if (tooltipEl) {
+        tooltipEl.classList.remove('visible');
+        tooltipEl.setAttribute('aria-hidden', 'true');
+        tooltipEl.style.display = 'none';
+    }
+    if (tooltipTarget) {
+        tooltipTarget.setAttribute('aria-expanded', 'false');
+        tooltipTarget.removeAttribute('aria-describedby');
+        tooltipTarget = null;
+    }
+}
+
+function toggleTooltip(event, text) {
+    const isVisible = tooltipEl && tooltipEl.classList.contains('visible');
+    const isSameTarget = tooltipTarget === event.currentTarget;
+
+    if (isVisible && isSameTarget) {
+        hideTooltip();
+        return;
+    }
+
+    if (tooltipTarget && tooltipTarget !== event.currentTarget) {
+        tooltipTarget.setAttribute('aria-expanded', 'false');
+        tooltipTarget.removeAttribute('aria-describedby');
+    }
+
+    tooltipTarget = event.currentTarget;
+    tooltipTarget.setAttribute('aria-expanded', 'true');
+    tooltipTarget.setAttribute('aria-describedby', 'impact-tooltip');
+    showTooltip(event, text);
+}
+
+function initGlobalTooltipHandlers() {
+    document.addEventListener('click', (event) => {
+        if (!tooltipEl || !tooltipEl.classList.contains('visible')) return;
+        if (tooltipEl.contains(event.target)) return;
+        if (event.target.closest('.impact-tooltip-trigger')) return;
+        hideTooltip();
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            hideTooltip();
+        }
+    });
 }
 
 // ============================================

@@ -897,15 +897,33 @@ body {
 }
 
 .site-risk {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    padding: 4px 10px;
+    padding: 2px 8px;
     border-radius: 999px;
     background: var(--site-risk-bg);
     color: var(--site-risk-color);
     border: 1px solid var(--site-risk-border);
-    min-width: 62px;
+    min-width: 56px;
     text-align: center;
+    white-space: nowrap;
+}
+
+.site-metrics {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.site-impact {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.35);
+    color: var(--impact-color, var(--text-secondary));
+    border: 1px solid var(--impact-color, var(--border-color));
     white-space: nowrap;
 }
 
@@ -1447,4 +1465,66 @@ body {
 
 .popup-row strong.popup-confidence-low {
     color: var(--text-muted);
+}
+
+/* ========================================
+   Impact Score Tooltip
+   ======================================== */
+.impact-tooltip-row {
+    display: flex;
+    justify-content: center;
+    padding-top: 8px;
+    border-top: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.impact-score-banner {
+    cursor: pointer;
+}
+
+.impact-tooltip-trigger {
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    cursor: pointer;
+    padding: 4px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    transition: all 0.2s ease;
+}
+
+.impact-tooltip-trigger:hover {
+    color: var(--text-primary);
+    background: rgba(59, 130, 246, 0.2);
+}
+
+.impact-tooltip-trigger:focus-visible {
+    outline: 2px solid rgba(59, 130, 246, 0.6);
+    outline-offset: 2px;
+}
+
+.custom-tooltip {
+    position: fixed;
+    z-index: 2000;
+    max-width: 280px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.95);
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
+    font-size: 0.72rem;
+    line-height: 1.4;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    white-space: pre-line;
+}
+
+.custom-tooltip.visible {
+    opacity: 1;
+    transform: translateY(0);
 }

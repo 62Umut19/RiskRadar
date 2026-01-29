@@ -76,18 +76,19 @@
                                 <i class="fas fa-sort"></i> Sortierung
                             </label>
                             <select id="sort-select" class="sort-select">
-                                <option value="name-asc">Name (A-Z)</option>
+                                <option value="name-asc" selected>Name (A-Z)</option>
                                 <option value="name-desc">Name (Z-A)</option>
-                                <option value="risk-desc" selected>Risiko (höchstes zuerst)</option>
+                                <option value="risk-desc">Risiko (höchstes zuerst)</option>
                                 <option value="risk-asc">Risiko (niedrigstes zuerst)</option>
+                                <option value="impact-desc">BIS (höchstes zuerst)</option>
+                                <option value="impact-asc">BIS (niedrigstes zuerst)</option>
                             </select>
                         </div>
                         <!-- Type Filter Buttons -->
                         <div class="filter-buttons" role="group" aria-label="Standorttyp">
-                            <button type="button" class="filter-btn active" data-filter="all">Alle</button>
-                            <button type="button" class="filter-btn" data-filter="hub">Hubs</button>
-                            <button type="button" class="filter-btn" data-filter="depot">Depots</button>
-                            <button type="button" class="filter-btn"
+                            <button type="button" class="filter-btn active" data-filter="hub">Hubs</button>
+                            <button type="button" class="filter-btn active" data-filter="depot">Depots</button>
+                            <button type="button" class="filter-btn active"
                                 data-filter="sortierzentrum">Sortierzentren</button>
                         </div>
                     </div>
@@ -185,11 +186,11 @@
                     <div class="filter-section filter-stats">
                         <label class="filter-section-label"><i class="fas fa-chart-bar"></i> Statistik</label>
                         <div class="stat-row">
-                            <span class="stat-label">🔥 Feuer sichtbar:</span>
+                            <span class="stat-label">🔥 Feuer:</span>
                             <span class="stat-value" id="visible-fires-count">0</span>
                         </div>
                         <div class="stat-row">
-                            <span class="stat-label">🌍 Erdbeben sichtbar:</span>
+                            <span class="stat-label">🌍 Erdbeben:</span>
                             <span class="stat-value" id="visible-quakes-count">0</span>
                         </div>
                         <div class="stat-row total">

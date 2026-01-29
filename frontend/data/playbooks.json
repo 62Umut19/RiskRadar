@@ -10,34 +10,48 @@
             "measures": [
                 {
                     "priority": 1,
+                    "action": "Lagebild eng verfolgen (Monitoring + lokale Warnungen)",
+                    "owner": "Standortleiter",
+                    "sla_hours": 6,
+                    "severity_min": "medium"
+                },
+                {
+                    "priority": 2,
+                    "action": "Alarmbereitschaft herstellen (Teams informieren, Einsatzplanung prüfen)",
+                    "owner": "Operations Manager",
+                    "sla_hours": 8,
+                    "severity_min": "medium"
+                },
+                {
+                    "priority": 3,
                     "action": "Evakuierungsbereitschaft herstellen",
                     "owner": "Standortleiter",
                     "sla_hours": 2,
                     "severity_min": "high"
                 },
                 {
-                    "priority": 2,
+                    "priority": 4,
                     "action": "Fahrzeugflotte sichern/umpositionieren",
                     "owner": "Fuhrparkleiter",
                     "sla_hours": 4,
                     "severity_min": "high"
                 },
                 {
-                    "priority": 3,
+                    "priority": 5,
                     "action": "Backup-Standort aktivieren",
                     "owner": "Operations Manager",
                     "sla_hours": 6,
                     "severity_min": "critical"
                 },
                 {
-                    "priority": 4,
+                    "priority": 6,
                     "action": "Warenumlagerung starten",
                     "owner": "Lagerleiter",
                     "sla_hours": 12,
                     "severity_min": "critical"
                 },
                 {
-                    "priority": 5,
+                    "priority": 7,
                     "action": "Kunden über Verzögerungen informieren",
                     "owner": "Kundenservice",
                     "sla_hours": 4,
