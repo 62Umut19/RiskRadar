@@ -76,7 +76,12 @@ projekt-root/
 ├── frontend/                       # Standalone Web-Dashboard
 │   ├── index.html                 # Dashboard HTML
 │   ├── dashboard.js               # Dashboard JavaScript
+│   ├── riskUtils.js               # Risiko-/Formatierungs-Helper
 │   ├── styles.css                 # Dashboard Styles
+│   ├── package.json               # Frontend Scripts (serve/tests)
+│   ├── playwright.config.js       # E2E Test-Konfiguration
+│   ├── jest.config.js             # Unit Test-Konfiguration
+│   ├── tests/                     # Unit + E2E Tests
 │   └── data/                      # JSON-Daten (auto-generiert)
 │       ├── forecast_data.json     # Vorhersage-Daten
 │       └── forecast_metadata.json # Statistiken & Metadaten
@@ -421,6 +426,15 @@ Interaktive Folium-Karte mit:
 
 Das Projekt enthält ein standalone Web-Dashboard zur Visualisierung der Vorhersagen.
 
+### Frontend-Struktur (Überblick)
+
+- `frontend/index.html`: Statische HTML-Shell, lädt Leaflet & Fonts via CDN
+- `frontend/dashboard.js`: Hauptlogik (Forecast/History Views, Karten, Filter)
+- `frontend/riskUtils.js`: Hilfsfunktionen für Risiko-Logik & Formatierung
+- `frontend/styles.css`: Layout, Theme, Komponenten-Styles
+- `frontend/data/*.json`: Von Python generierte Daten für Forecast/History
+- `frontend/tests/`: Unit-Tests (Jest) & E2E-Tests (Playwright)
+
 ### Frontend starten
 
 ```bash
@@ -430,13 +444,23 @@ python app/run_real_forecast.py
 # 2. History-Daten exportieren (für History-View)
 python app/export_events.py
 
-# 3. Lokalen Webserver starten
+# 3. Lokalen Webserver starten (kein Build-Schritt notwendig)
 cd frontend
 python -m http.server 8000
+
+# Alternativ (Node): npm run serve  # verwendet npx serve auf Port 3000
 
 # 4. Browser öffnen
 open http://localhost:8000
 ```
+
+Hinweis: Bei `npm run serve` ist die URL `http://localhost:3000`.
+
+### Build/Bundle
+
+- Es gibt **keinen Build- oder Bundling-Schritt**: Das Frontend ist statisch (HTML/CSS/JS) und nutzt CDNs.
+- Für Produktion reicht es, den `frontend/` Ordner statisch auszuliefern.
+- Für Tests oder `npm run serve`: `cd frontend && npm install`
 
 ### Features
 - **Forecast-Tab**: Interaktive Leaflet-Karte mit Standort-Markern, Risiko-Details und Site-Liste
@@ -624,4 +648,3 @@ Dieses Projekt wurde für akademische Zwecke entwickelt (FOM - Business Analytic
 - NASA FIRMS (Public Domain)
 - USGS Earthquake Catalog (Public Domain)
 - OpenMeteo (Free for non-commercial use)
-
