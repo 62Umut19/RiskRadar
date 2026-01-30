@@ -218,10 +218,11 @@ open outputs/real_forecast_map.html
 # Vorbereitung (1x durchführen):
 docker-compose build
 docker-compose run --rm radar python app/run_real_forecast.py
+docker-compose run --rm radar python app/export_events.py
 
 # Am Präsentationstag (3 Sekunden!):
 docker-compose up -d viewer
-open http://localhost:8080/sensor_forecast_map.html
+open http://localhost:8080/index.html
 ```
 
 **Weitere Docker-Befehle:**
@@ -244,17 +245,17 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r app/requirements.txt
 
 # 3. Modell trainieren (einmalig)
-cd app
-python train_sensor_model.py
+python app/train_sensor_model.py --model fire
+python app/train_sensor_model.py --model quake
 
 # 4. Vorhersage ausführen
-python run_real_forecast.py
+python app/run_real_forecast.py
 
 # 5. History-Daten für Frontend exportieren
-python export_events.py
+python app/export_events.py
 
 # 6. Frontend starten (statisches Dashboard)
-cd ../frontend
+cd frontend
 python -m http.server 8000
 
 # Alternativ (Node): npm install && npm run serve  # Port 3000
