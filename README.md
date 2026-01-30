@@ -249,6 +249,15 @@ python train_sensor_model.py
 
 # 4. Vorhersage ausführen
 python run_real_forecast.py
+
+# 5. History-Daten für Frontend exportieren
+python export_events.py
+
+# 6. Frontend starten (statisches Dashboard)
+cd ../frontend
+python -m http.server 8000
+
+# Alternativ (Node): npm install && npm run serve  # Port 3000
 ```
 
 ## ⚙️ Konfiguration
@@ -434,33 +443,6 @@ Das Projekt enthält ein standalone Web-Dashboard zur Visualisierung der Vorhers
 - `frontend/styles.css`: Layout, Theme, Komponenten-Styles
 - `frontend/data/*.json`: Von Python generierte Daten für Forecast/History
 - `frontend/tests/`: Unit-Tests (Jest) & E2E-Tests (Playwright)
-
-### Frontend starten
-
-```bash
-# 1. Erst Vorhersage ausführen (generiert JSON-Daten)
-python app/run_real_forecast.py
-
-# 2. History-Daten exportieren (für History-View)
-python app/export_events.py
-
-# 3. Lokalen Webserver starten (kein Build-Schritt notwendig)
-cd frontend
-python -m http.server 8000
-
-# Alternativ (Node): npm run serve  # verwendet npx serve auf Port 3000
-
-# 4. Browser öffnen
-open http://localhost:8000
-```
-
-Hinweis: Bei `npm run serve` ist die URL `http://localhost:3000`.
-
-### Build/Bundle
-
-- Es gibt **keinen Build- oder Bundling-Schritt**: Das Frontend ist statisch (HTML/CSS/JS) und nutzt CDNs.
-- Für Produktion reicht es, den `frontend/` Ordner statisch auszuliefern.
-- Für Tests oder `npm run serve`: `cd frontend && npm install`
 
 ### Features
 - **Forecast-Tab**: Interaktive Leaflet-Karte mit Standort-Markern, Risiko-Details und Site-Liste
