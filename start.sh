@@ -79,13 +79,14 @@ fi
 # Vorhersage erstellen
 echo "🔮 Generating 72h forecast..."
 docker-compose run --rm radar python app/run_real_forecast.py
+docker-compose run --rm radar python app/export_events.py
 
 echo ""
 echo "╔═══════════════════════════════════════════════════════════════╗"
 echo "║                  ✅ RISKRADAR IS READY!                      ║"
 echo "╚═══════════════════════════════════════════════════════════════╝"
 echo ""
-echo "🗺️  Open the map: http://localhost:8080/sensor_forecast_map.html"
+echo "🗺️  Open the map: http://localhost:8080/index.html"
 echo ""
 echo "📊 Results saved to: outputs/sensor_forecast_72h.csv"
 echo ""

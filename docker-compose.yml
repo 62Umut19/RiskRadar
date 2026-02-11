@@ -15,6 +15,7 @@ services:
       - ./outputs:/app/outputs
       - ./FIRMS_2024_ARCHIVE:/app/FIRMS_2024_ARCHIVE:ro
       - ./FIRMS_2025_NRT:/app/FIRMS_2025_NRT
+      - ./frontend/data:/app/frontend/data 
     networks:
       - radar-network
     # Keep container running for interactive commands
@@ -28,7 +29,7 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./outputs:/usr/share/nginx/html:ro
+      - ./frontend:/usr/share/nginx/html:ro
     networks:
       - radar-network
     depends_on:

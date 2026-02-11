@@ -1,0 +1,185 @@
+{
+    "version": "1.0",
+    "description": "Notfall-Playbooks für Naturereignisse",
+    "playbooks": {
+        "fire": {
+            "name": "Waldbrand-Notfallplan",
+            "icon": "fa-fire",
+            "color": "#f97316",
+            "description": "Maßnahmen bei erhöhtem Waldbrandrisiko",
+            "measures": [
+                {
+                    "priority": 1,
+                    "action": "Lagebild eng verfolgen (Monitoring + lokale Warnungen)",
+                    "owner": "Standortleiter",
+                    "sla_hours": 6,
+                    "severity_min": "medium"
+                },
+                {
+                    "priority": 2,
+                    "action": "Alarmbereitschaft herstellen (Teams informieren, Einsatzplanung prüfen)",
+                    "owner": "Operations Manager",
+                    "sla_hours": 8,
+                    "severity_min": "medium"
+                },
+                {
+                    "priority": 3,
+                    "action": "Evakuierungsbereitschaft herstellen",
+                    "owner": "Standortleiter",
+                    "sla_hours": 2,
+                    "severity_min": "high"
+                },
+                {
+                    "priority": 4,
+                    "action": "Fahrzeugflotte sichern/umpositionieren",
+                    "owner": "Fuhrparkleiter",
+                    "sla_hours": 4,
+                    "severity_min": "high"
+                },
+                {
+                    "priority": 5,
+                    "action": "Backup-Standort aktivieren",
+                    "owner": "Operations Manager",
+                    "sla_hours": 6,
+                    "severity_min": "critical"
+                },
+                {
+                    "priority": 6,
+                    "action": "Warenumlagerung starten",
+                    "owner": "Lagerleiter",
+                    "sla_hours": 12,
+                    "severity_min": "critical"
+                },
+                {
+                    "priority": 7,
+                    "action": "Kunden über Verzögerungen informieren",
+                    "owner": "Kundenservice",
+                    "sla_hours": 4,
+                    "severity_min": "high"
+                }
+            ],
+            "checklist": [
+                "Brandschutzmeldesystem prüfen",
+                "Notausgänge freihalten",
+                "Mitarbeiter-Kontaktliste aktualisieren",
+                "Feuerlöscher-Standorte verifizieren",
+                "Kritische Dokumente sichern",
+                "Notstromaggregat testen",
+                "Versicherungskontakt bereithalten"
+            ]
+        },
+        "quake": {
+            "name": "Erdbeben-Notfallplan",
+            "icon": "fa-mountain",
+            "color": "#8b5cf6",
+            "description": "Maßnahmen bei erhöhtem Erdbebenrisiko",
+            "measures": [
+                {
+                    "priority": 1,
+                    "action": "Strukturelle Sicherheitsprüfung",
+                    "owner": "Facility Manager",
+                    "sla_hours": 1,
+                    "severity_min": "high"
+                },
+                {
+                    "priority": 2,
+                    "action": "Schwere Güter sichern/absenken",
+                    "owner": "Lagerleiter",
+                    "sla_hours": 3,
+                    "severity_min": "high"
+                },
+                {
+                    "priority": 3,
+                    "action": "IT-Systeme Backup erstellen",
+                    "owner": "IT-Leiter",
+                    "sla_hours": 2,
+                    "severity_min": "medium"
+                },
+                {
+                    "priority": 4,
+                    "action": "Notfall-Kommunikationsplan aktivieren",
+                    "owner": "Standortleiter",
+                    "sla_hours": 1,
+                    "severity_min": "critical"
+                },
+                {
+                    "priority": 5,
+                    "action": "Backup-Standort in Bereitschaft",
+                    "owner": "Operations Manager",
+                    "sla_hours": 4,
+                    "severity_min": "critical"
+                }
+            ],
+            "checklist": [
+                "Notfall-Kit überprüfen",
+                "Erste-Hilfe-Material kontrollieren",
+                "Sammelplätze markieren",
+                "Regalverankerungen prüfen",
+                "Gas-/Wasserleitungen absperren können",
+                "Notfallübung durchführen",
+                "Gebäudeversicherung prüfen"
+            ]
+        },
+        "combined": {
+            "name": "Multi-Risiko Notfallplan",
+            "icon": "fa-shield-alt",
+            "color": "#ef4444",
+            "description": "Übergreifende Maßnahmen bei mehreren Risikofaktoren",
+            "measures": [
+                {
+                    "priority": 1,
+                    "action": "Krisenstab einberufen",
+                    "owner": "Geschäftsführung",
+                    "sla_hours": 1,
+                    "severity_min": "critical"
+                },
+                {
+                    "priority": 2,
+                    "action": "Alle Schichten informieren",
+                    "owner": "HR-Leiter",
+                    "sla_hours": 2,
+                    "severity_min": "high"
+                },
+                {
+                    "priority": 3,
+                    "action": "Business Continuity Plan aktivieren",
+                    "owner": "Operations Manager",
+                    "sla_hours": 4,
+                    "severity_min": "critical"
+                },
+                {
+                    "priority": 4,
+                    "action": "Lieferanten über Risiken informieren",
+                    "owner": "Einkauf",
+                    "sla_hours": 6,
+                    "severity_min": "high"
+                }
+            ],
+            "checklist": [
+                "Alle Risiko-spezifischen Checklisten durchgehen",
+                "Kommunikationskanäle testen",
+                "Notfallbudget freigeben",
+                "Medien-Statement vorbereiten",
+                "Behördenkontakte bereithalten"
+            ]
+        }
+    },
+    "severity_thresholds": {
+        "low": {
+            "min": 0,
+            "max": 25
+        },
+        "medium": {
+            "min": 25,
+            "max": 50
+        },
+        "high": {
+            "min": 50,
+            "max": 75
+        },
+        "critical": {
+            "min": 75,
+            "max": 100
+        }
+    }
+}

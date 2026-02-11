@@ -1,6 +1,6 @@
 {
   "model_type": "fire",
-  "training_date": "2026-01-08T15:11:54.709947",
+  "training_date": "2026-01-30T18:51:57.401901",
   "hyperparameters": {
     "n_estimators": 200,
     "max_depth": 15,
@@ -35,97 +35,97 @@
   "metrics": {
     "confusion_matrix": [
       [
-        425,
-        148
+        428,
+        145
       ],
       [
-        23,
-        76
+        24,
+        75
       ]
     ],
-    "recall": 0.7676767676767676,
-    "precision": 0.3392857142857143,
-    "f1": 0.47058823529411764,
-    "pr_auc": 0.4434120122153561,
-    "roc_auc": 0.8120295450138383,
-    "accuracy": 0.7455357142857143,
+    "recall": 0.7575757575757576,
+    "precision": 0.3409090909090909,
+    "f1": 0.4702194357366771,
+    "pr_auc": 0.4463317487490687,
+    "roc_auc": 0.8125055088405874,
+    "accuracy": 0.7485119047619048,
     "baseline_accuracy": 0.8526785714285714,
     "feature_importance": [
       {
         "feature": "temp_max",
-        "importance": 0.11547784959960178
+        "importance": 0.11311908382429195
       },
       {
         "feature": "humidity_mean",
-        "importance": 0.10705844082794246
-      },
-      {
-        "feature": "humidity_min",
-        "importance": 0.10050344527590342
-      },
-      {
-        "feature": "longitude",
-        "importance": 0.1001986628348156
+        "importance": 0.10792235427469751
       },
       {
         "feature": "temp_mean",
-        "importance": 0.0989898420422909
+        "importance": 0.10130822113614356
+      },
+      {
+        "feature": "humidity_min",
+        "importance": 0.10019202104832874
+      },
+      {
+        "feature": "longitude",
+        "importance": 0.09801522222389439
       },
       {
         "feature": "latitude",
-        "importance": 0.08587856669355205
+        "importance": 0.08610695187470245
       },
       {
         "feature": "wind_max",
-        "importance": 0.08160985819673588
+        "importance": 0.08148135326934128
       },
       {
         "feature": "rain_total",
-        "importance": 0.07872389760511112
+        "importance": 0.07920111297575082
       },
       {
         "feature": "dry_days",
-        "importance": 0.05007785820668022
+        "importance": 0.05096860495808747
       },
       {
         "feature": "month",
-        "importance": 0.049899683636813304
+        "importance": 0.0498626832689492
       },
       {
         "feature": "fires_30d_count",
-        "importance": 0.04913752534395913
+        "importance": 0.04811340825268185
       },
       {
         "feature": "season",
-        "importance": 0.019455713450038287
+        "importance": 0.01988731740201808
       },
       {
         "feature": "fire_max_frp_7d",
-        "importance": 0.012629382184266288
+        "importance": 0.012989325312057902
       },
       {
         "feature": "fire_avg_frp_7d",
-        "importance": 0.012416060043448317
+        "importance": 0.012702007689872627
       },
       {
         "feature": "fire_max_brightness_7d",
-        "importance": 0.011761399694366754
+        "importance": 0.012120120224393622
       },
       {
         "feature": "fire_avg_brightness_7d",
-        "importance": 0.009753711000183178
+        "importance": 0.009964636793864091
       },
       {
         "feature": "days_since_last_fire",
-        "importance": 0.0064311121967147635
+        "importance": 0.006788342699960183
       },
       {
         "feature": "fires_7d_count",
-        "importance": 0.005673348268617599
+        "importance": 0.005626055853624998
       },
       {
         "feature": "fires_persistent_days",
-        "importance": 0.004323642898958851
+        "importance": 0.003631176917339316
       }
     ]
   }

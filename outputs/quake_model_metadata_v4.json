@@ -1,6 +1,6 @@
 {
   "model_type": "quake",
-  "training_date": "2026-01-08T15:12:04.257754",
+  "training_date": "2026-01-30T18:52:06.887176",
   "hyperparameters": {
     "n_estimators": 200,
     "max_depth": 15,
@@ -27,65 +27,65 @@
   "metrics": {
     "confusion_matrix": [
       [
-        2224,
-        993
+        2206,
+        1018
       ],
       [
-        51,
-        694
+        55,
+        683
       ]
     ],
-    "recall": 0.9315436241610738,
-    "precision": 0.41138114997036157,
-    "f1": 0.5707236842105263,
-    "pr_auc": 0.802404328726885,
-    "roc_auc": 0.9271963332380622,
-    "accuracy": 0.7364967188288744,
-    "baseline_accuracy": 0.8119636547198384,
+    "recall": 0.9254742547425474,
+    "precision": 0.40152851263962375,
+    "f1": 0.5600656006560065,
+    "pr_auc": 0.8011850739289899,
+    "roc_auc": 0.9259344718137007,
+    "accuracy": 0.7291771832407875,
+    "baseline_accuracy": 0.8137304391721353,
     "feature_importance": [
       {
         "feature": "longitude",
-        "importance": 0.46907202324197533
+        "importance": 0.4632440395094871
       },
       {
         "feature": "latitude",
-        "importance": 0.32346645376012595
-      },
-      {
-        "feature": "month",
-        "importance": 0.046177494200007406
+        "importance": 0.32937478006393295
       },
       {
         "feature": "quake_max_mag_30d",
-        "importance": 0.040581744277402736
+        "importance": 0.04532997360293569
+      },
+      {
+        "feature": "month",
+        "importance": 0.043416917897517185
       },
       {
         "feature": "days_since_last_quake",
-        "importance": 0.039935898439954466
+        "importance": 0.03854362598057506
       },
       {
         "feature": "quake_avg_mag_30d",
-        "importance": 0.03642360277983347
+        "importance": 0.035345003334857614
       },
       {
         "feature": "quakes_30d_count",
-        "importance": 0.024022167283478713
+        "importance": 0.02598011481424699
       },
       {
         "feature": "season",
-        "importance": 0.012803744996009876
-      },
-      {
-        "feature": "seismic_trend",
-        "importance": 0.0035696474317309683
+        "importance": 0.011725256464061685
       },
       {
         "feature": "quakes_7d_count",
-        "importance": 0.0033494838402112607
+        "importance": 0.0033600198754997913
+      },
+      {
+        "feature": "seismic_trend",
+        "importance": 0.0031025420213292958
       },
       {
         "feature": "quakes_5plus_count",
-        "importance": 0.000597739749269999
+        "importance": 0.0005777264355565345
       }
     ]
   }

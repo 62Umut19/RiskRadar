@@ -73,11 +73,23 @@ projekt-root/
 ├── data/
 │   ├── standorte.csv              # Standort-Input
 │   └── cache/                     # API-Cache
+├── frontend/                       # Standalone Web-Dashboard
+│   ├── index.html                 # Dashboard HTML
+│   ├── dashboard.js               # Dashboard JavaScript
+│   ├── riskUtils.js               # Risiko-/Formatierungs-Helper
+│   ├── styles.css                 # Dashboard Styles
+│   ├── package.json               # Frontend Scripts (serve/tests)
+│   ├── playwright.config.js       # E2E Test-Konfiguration
+│   ├── jest.config.js             # Unit Test-Konfiguration
+│   ├── tests/                     # Unit + E2E Tests
+│   └── data/                      # JSON-Daten (auto-generiert)
+│       ├── forecast_data.json     # Vorhersage-Daten
+│       └── forecast_metadata.json # Statistiken & Metadaten
 ├── outputs/
 │   ├── fire_model_v4.pkl          # Trainiertes Fire Model
 │   ├── quake_model_v4.pkl         # Trainiertes Quake Model
-│   ├── real_forecast_72h.csv      # Vorhersage-Ergebnisse
-│   └── real_forecast_map.html     # Interaktive Karte
+│   ├── sensor_forecast_72h.csv    # Vorhersage-Ergebnisse
+│   └── sensor_forecast_map.html   # Interaktive Folium-Karte
 ├── Dockerfile
 ├── docker-compose.yml
 └── .env                           # Konfiguration
@@ -119,7 +131,7 @@ FIRMS_MAP_KEY=dein_map_key_hier
 **🔥 Download 1: FIRMS 2024 Archive**
 - **Link:** https://firms.modaps.eosdis.nasa.gov/download/
 - **Auswahl:** `Create New Request`  → `World`  → `MODIS` → `Timeframe 2024-01-01 - 2024-12-31` → `CSV` → `Submit`
-- **Dateiname:** `fire_archive_M-C61_XXXXXX.csv`
+- **Dateiname:** `fire_archive_M-C61.csv`
 - **Speicherort:** `FIRMS_2024_ARCHIVE/`
 - **Zweck:** Historische Trainingsdaten (ganzes Jahr 2024)
 
@@ -127,8 +139,8 @@ FIRMS_MAP_KEY=dein_map_key_hier
 - **Link:** https://firms.modaps.eosdis.nasa.gov/download/
 - **Auswahl:** `Create New Request`  → `World`  → `MODIS` → `Timeframe 2025-01-01 - 2025-12-31` → `CSV` → `Submit`
 - **Enthalten:**
-  - `fire_archive_M-C61_XXXXXX.csv` - Archivdaten 2025
-  - `fire_nrt_M-C61_XXXXXX.csv` - Letzte 7 Tage (NRT)
+  - `fire_archive_M-C61.csv` - Archivdaten 2025
+  - `fire_nrt_M-C61.csv` - Letzte 7 Tage (NRT)
 - **Speicherort:** Beide in `FIRMS_2025_NRT/` entpacken
 - **Zweck:** Aktuelle Daten für Vorhersagen
 
@@ -136,10 +148,10 @@ FIRMS_MAP_KEY=dein_map_key_hier
 ```
 RiskRadar/
 ├── FIRMS_2024_ARCHIVE/
-│   └── fire_archive_M-C61_XXXXXX.csv
+│   └── fire_archive_M-C61.csv
 ├── FIRMS_2025_NRT/
-│   ├── fire_nrt_M-C61_XXXXXX.csv
-│   └── fire_archive_M-C61_XXXXXX.csv
+│   ├── fire_nrt_M-C61.csv
+│   └── fire_archive_M-C61.csv
 └── .env                                  (mit deinem MAP_KEY)
 ```
 
@@ -206,10 +218,11 @@ open outputs/real_forecast_map.html
 # Vorbereitung (1x durchführen):
 docker-compose build
 docker-compose run --rm radar python app/run_real_forecast.py
+docker-compose run --rm radar python app/export_events.py
 
 # Am Präsentationstag (3 Sekunden!):
 docker-compose up -d viewer
-open http://localhost:8080/sensor_forecast_map.html
+open http://localhost:8080/index.html
 ```
 
 **Weitere Docker-Befehle:**
@@ -232,11 +245,20 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r app/requirements.txt
 
 # 3. Modell trainieren (einmalig)
-cd app
-python train_sensor_model.py
+python app/train_sensor_model.py --model fire
+python app/train_sensor_model.py --model quake
 
 # 4. Vorhersage ausführen
-python run_real_forecast.py
+python app/run_real_forecast.py
+
+# 5. History-Daten für Frontend exportieren
+python app/export_events.py
+
+# 6. Frontend starten (statisches Dashboard)
+cd frontend
+python -m http.server 8000
+
+# Alternativ (Node): npm install && npm run serve  # Port 3000
 ```
 
 ## ⚙️ Konfiguration
@@ -386,7 +408,7 @@ Das Wildfire-Modell nutzt NASA FIRMS Satellitendaten und zeigt **sehr gute Perfo
 
 ## 📈 Outputs
 
-### 1. `real_forecast_72h.csv`
+### 1. `sensor_forecast_72h.csv`
 Vorhersage-Ergebnisse für jeden Standort:
 
 | location      | latitude | longitude | fire_risk | fire_probability | quake_risk | quake_probability |
@@ -394,16 +416,51 @@ Vorhersage-Ergebnisse für jeden Standort:
 | Los Angeles   | 34.05    | -118.24   | HIGH      | 0.78             | LOW        | 0.23              |
 | San Francisco | 37.77    | -122.42   | LOW       | 0.12             | HIGH       | 0.89              |
 
-### 2. `real_forecast_map.html`
+### 2. `sensor_forecast_map.html`
 Interaktive Folium-Karte mit:
 - Standort-Markern (Rot=HIGH RISK, Grün=LOW RISK)
 - Popups mit Fire/Quake Wahrscheinlichkeiten
 - Zoom und Pan-Funktionalität
 
-### 3. Trainierte Modelle
+### 3. JSON-Daten für Frontend (`frontend/data/`)
+- `forecast_data.json`: Alle Site-Vorhersagen mit Risk Scores
+- `forecast_metadata.json`: Statistiken, Version und Generierungszeitpunkt
+- `events_data.json`: Aggregierte History-Events (Feuer/Erdbeben) der letzten Tage
+
+### 4. Trainierte Modelle
 - `fire_model_v4.pkl`: Random Forest für Feuer-Vorhersage
 - `quake_model_v4.pkl`: Random Forest für Erdbeben-Vorhersage
 - `*_metadata_v4.json`: Modell-Informationen und Metriken
+
+## 🖥️ Frontend Dashboard
+
+Das Projekt enthält ein standalone Web-Dashboard zur Visualisierung der Vorhersagen.
+
+### Frontend-Struktur (Überblick)
+
+- `frontend/index.html`: Statische HTML-Shell, lädt Leaflet & Fonts via CDN
+- `frontend/dashboard.js`: Hauptlogik (Forecast/History Views, Karten, Filter)
+- `frontend/riskUtils.js`: Hilfsfunktionen für Risiko-Logik & Formatierung
+- `frontend/styles.css`: Layout, Theme, Komponenten-Styles
+- `frontend/data/*.json`: Von Python generierte Daten für Forecast/History
+- `frontend/tests/`: Unit-Tests (Jest) & E2E-Tests (Playwright)
+
+### Features
+- **Forecast-Tab**: Interaktive Leaflet-Karte mit Standort-Markern, Risiko-Details und Site-Liste
+- **History-Tab**: Vergangene Feuer/Erdbeben mit Filtern (Zeitraum, Brightness, Detektionen, Magnitude, Tiefe)
+- **Live-Statistiken**: Sichtbare Events werden in der Sidebar aktualisiert
+- **Einheitliche Popups**: Konsistentes Layout für Standorte und Events
+- **Responsive Design**: Funktioniert auf Desktop und Mobile
+
+### History View Daten exportieren
+
+```bash
+# Exportiert aggregierte Feuer-Events (0.1° Grid) und USGS-Erdbeben
+python app/export_events.py
+```
+
+Output: `frontend/data/events_data.json`  
+Konfiguration: `Config.EVENT_HISTORY_DAYS`, `Config.MIN_EARTHQUAKE_MAGNITUDE_EXPORT`
 
 ## 🔍 Logging
 
@@ -427,6 +484,14 @@ Das System loggt alle wichtigen Schritte:
 cd app
 python sensor_features.py  # Test Feature Engineering
 python sensor_labels.py    # Test Label Generation
+```
+
+### Frontend Tests
+
+```bash
+cd frontend
+npm run test:unit   # Jest
+npm run test:e2e    # Playwright
 ```
 
 ### Code-Qualität
@@ -566,5 +631,3 @@ Dieses Projekt wurde für akademische Zwecke entwickelt (FOM - Business Analytic
 - NASA FIRMS (Public Domain)
 - USGS Earthquake Catalog (Public Domain)
 - OpenMeteo (Free for non-commercial use)
-
-
