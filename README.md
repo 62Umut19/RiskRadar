@@ -26,11 +26,6 @@ Ein Python-basiertes Machine Learning System zur **Vorhersage von Naturkatastrop
    - Fire: `{0: 1, 1: 10}` → Missing fires penalisiert
    - Quake: `{0: 1, 1: 15}` → Reduziert von 30 für bessere Precision
 
-**📊 Performance-Verbesserungen:**
-- Fire Recall: 32% → **77%** (+138%!) ✅
-- Fire F1: 38% → **47%** (+24%)
-- Quake Precision: 40.4% → **41.1%** (+2%)
-- Quake PR-AUC: 79% → **80.2%** (+1.5%)
 
 **🔧 Technische Verbesserungen:**
 - Stratified random split statt zeitbasiert
@@ -324,22 +319,6 @@ Anchorage,61.2181,-149.9003
    - Quake: 0.4 (statt 0.5) für Balance
 6. **Evaluation**: Precision, Recall, F1-Score, PR-AUC, ROC-AUC
 
-**Aktuelle Modell-Performance (nach Optimierung):**
-
-🔥 **Fire Model:**
-- **Recall: 76.8%** (erkennt 77 von 100 Feuern!) ✅
-- **Precision: 33.9%** (1 von 3 Alarmen ist korrekt)
-- **F1-Score: 47.1%**
-- **PR-AUC: 44.3%** (gut bei imbalanced data)
-- **ROC-AUC: 81.2%**
-
-🌍 **Quake Model:**
-- **Recall: 93.2%** (erkennt 93 von 100 Erdbeben!) ✅
-- **Precision: 41.1%** (4 von 10 Alarmen sind korrekt)
-- **F1-Score: 57.1%**
-- **PR-AUC: 80.2%** (sehr gut!)
-- **ROC-AUC: 92.7%**
-
 **Verbesserungen seit Optimierung (Jan 2026):**
 - Fire Model Recall: +45pp (32% → 77%) 🚀
 - Fire Model F1: +9pp (38% → 47%)
@@ -357,53 +336,6 @@ Anchorage,61.2181,-149.9003
 5. **Klassifizierung mit Custom Thresholds**: 
    - Fire: >30% = HIGH RISK, ≤30% = LOW RISK
    - Quake: >40% = HIGH RISK, ≤40% = LOW RISK
-
-## 📊 Model Performance und Limitationen
-
-### Wildfire Model ✅
-Das Wildfire-Modell nutzt NASA FIRMS Satellitendaten und zeigt **sehr gute Performance** nach Optimierung:
-
-**Performance (Stand: Jan 2026):**
-- **Recall: 76.8%** - Erkennt 77 von 100 Feuern! ✅
-- **Precision: 33.9%** - 1 von 3 Alarmen ist korrekt (akzeptabel für Warnsystem)
-- **F1-Score: 47.1%** - Gute Balance
-- **PR-AUC: 44.3%** - Gut bei imbalanced data
-- **ROC-AUC: 81.2%** - Sehr gut!
-
-**Optimierungen umgesetzt:**
-1. ✅ Separate Zeiträume (nur 2024-2025, wo FIRMS verfügbar)
-2. ✅ Aggressive class weights (`{0: 1, 1: 10}`)
-3. ✅ Custom threshold (0.3 statt 0.5) für höheren Recall
-4. ✅ Balanciertes Dataset (14.7% positive Events statt 2.4%)
-
-**Best suited for**: Regionen mit hohem Wildfire-Risiko (Kalifornien, Australien, Mittelmeer, etc.)
-
-### Earthquake Model ⚠️ (Eingeschränkte Vorhersagefähigkeit)
-
-**Aktuelle Performance (Stand: Jan 2026):**
-- **Recall: 93.2%** - Erkennt fast alle Erdbeben! ✅
-- **Precision: 41.1%** - 4 von 10 Alarmen sind korrekt
-- **F1-Score: 57.1%** - Gut balanciert
-- **PR-AUC: 80.2%** - Sehr gut für imbalanced data!
-- **ROC-AUC: 92.7%** - Exzellent!
-
-**Optimierungen umgesetzt:**
-1. ✅ 10 Jahre historische USGS-Daten (2015-2025, 445K Erdbeben)
-2. ✅ Moderate class weights (`{0: 1, 1: 15}`)
-3. ✅ Custom threshold (0.4 statt 0.5)
-4. ✅ Erweiterte Features (seismic trends, magnitude patterns)
-
-**Wissenschaftlicher Kontext:**
-- Kurzfristige Erdbebenvorhersage (72h) ist ein **ungelöstes Problem** in der Seismologie
-- Selbst beste seismologische Modelle erreichen nur 10-30% Precision
-- Unser Model (41% Precision, 93% Recall) liegt **über dem Stand der Wissenschaft**!
-- Das Modell ist geeignet für **Bildungszwecke** und **langfristige Risikobewertung**
-
-**Empfehlung für praktische Anwendungen:** 
-- Fokussiere dich auf das **Wildfire-Modell** (76.8% Recall, praktisch nutzbar)
-- Das **Quake-Modell** dient als Beispiel für ML-Herausforderungen mit komplexen Naturphänomenen
-- Für echte Erdbebenwarnung: Nutze professionelle seismische Netzwerke (USGS ShakeAlert, etc.)
-
 ---
 
 ## 📈 Outputs
