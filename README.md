@@ -319,11 +319,6 @@ Anchorage,61.2181,-149.9003
    - Quake: 0.4 (statt 0.5) für Balance
 6. **Evaluation**: Precision, Recall, F1-Score, PR-AUC, ROC-AUC
 
-**Verbesserungen seit Optimierung (Jan 2026):**
-- Fire Model Recall: +45pp (32% → 77%) 🚀
-- Fire Model F1: +9pp (38% → 47%)
-- Quake Model Precision: +0.7pp (40.4% → 41.1%)
-- Quake Model PR-AUC: +1.2pp (79% → 80.2%)
 
 ### Vorhersage
 
@@ -525,26 +520,6 @@ latitude, longitude, month, season
    - Quake: 0.4 (statt 0.5) für Balance
 8. **Evaluation**: Precision, Recall, F1, PR-AUC, ROC-AUC
 9. **Speichern**: .pkl Datei + Metadata JSON
-
-### Evaluation-Metriken
-
-- **Precision**: Von allen Warnungen, wie viele waren richtig?
-- **Recall**: Von allen echten Events, wie viele erkannt?
-- **F1-Score**: Harmonischer Mittelwert (Balance)
-- **PR-AUC**: Precision-Recall AUC (wichtig bei imbalanced data!)
-- **ROC-AUC**: Gesamtperformance (0.5=Zufall, 1.0=Perfekt)
-
-**Aktuelle Ergebnisse (Jan 2026):**
-- 🔥 **Fire Model**: Recall=76.8%, Precision=33.9%, F1=47.1%, PR-AUC=44.3%, ROC-AUC=81.2% ✅
-- 🌍 **Quake Model**: Recall=93.2%, Precision=41.1%, F1=57.1%, PR-AUC=80.2%, ROC-AUC=92.7% ✅
-
-**Verbesserungen gegenüber Baseline:**
-- Fire Model Recall: +45pp (von 32% auf 77%)! 🚀
-- Quake Model bereits sehr gut (93% Recall), weitere +1pp Precision
-
-**Interpretation für Warnsystem:**
-- **Fire Model**: Erkennt 77% aller Feuer, 1 von 3 Alarmen ist korrekt → Gut für Warnsystem!
-- **Quake Model**: Erkennt 93% aller Erdbeben, 4 von 10 Alarmen sind korrekt → Sehr gut!
 
 ## 🚀 Erweiterungsmöglichkeiten
 
